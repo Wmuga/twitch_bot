@@ -3,6 +3,11 @@ const eventHandler = require('.\\handlers.js');
 const enc = require('.\\crypt.js')
 const opt = require('.\\bot_options.json')
 const net = require('net')
+const fs = require('fs')
+
+let passed_messages =0;
+let current_timer = 0;
+let setted_timer = false;
 
 const options_bot = {
     options: {
@@ -30,43 +35,57 @@ const options_pinger = {
 
 console.log('Awaiting client connection');
 
-var connection = null;
+let connection = null;
 
 const client = new tmi.Client(options_bot);
-	const pinger = new tmi.Client(options_pinger);
+const pinger = new tmi.Client(options_pinger);
 
-	client.connect();
-	pinger.connect();
+client.connect();
+pinger.connect();
 
 
-	client.on('connected',(address,port) =>{
-		console.log("Successfully connected client");
-	});
+client.on('connected',(address,port) =>{
+	console.log("Successfully connected client");
+});
 
-	client.on('join',(channel,username) =>{
-		if(connection) connection.write('ujc'+username+opt.tcp_message_splitter);
-	});
+client.on('join',(channel,username) =>{
+	if(connection) connection.write('ujc'+username+opt.tcp_message_splitter);
+});
 	
-	client.on('part',(channel,username) =>{
-		if(connection) connection.write('upc'+username+opt.tcp_message_splitter);
-	});
+client.on('part',(channel,username) =>{
+	if(connection) connection.write('upc'+username+opt.tcp_message_splitter);
+});
 
-	pinger.on('connected',(address,port) =>{
-		console.log("Successfully connected pinger");
-	});
+pinger.on('connected',(address,port) =>{
+	console.log("Successfully connected pinger");
+});
 
-	function messageHandler(channel, userstate, message, self){
+function messageHandler(channel, userstate, message, self){
+	if (userstate.username!='wmuga_bot') {
+		passed_messages+=1;
 		eventHandler.messageHandler(channel, userstate, message, client);
+		if (!setted_timer){
+			setted_timer=true;
+			setTimeout(() =>{
+				setted_timer=false;
+				if (passed_messages>2){
+					current_timer=(current_timer+1)%opt.timer_messages.length;
+					passed_messages=0;
+					client.say(channel,opt.timer_messages[current_timer]);
+				}
+			},300000)
+		}
 	}
+}
 
-	function pingerHandler(channel, userstate, message, self)
-	{
-		eventHandler.pingerHandler(channel, userstate, message,connection);
-	}
-	client.addListener("message",messageHandler);
-	pinger.addListener("message",pingerHandler);
+function pingerHandler(channel, userstate, message, self)
+{
+	eventHandler.pingerHandler(channel, userstate, message,connection);
+}
+client.addListener("message",messageHandler);
+pinger.addListener("message",pingerHandler);
 
-var server = net.createServer(function(socket){
+let server = net.createServer(function(socket){
 	connection = socket;
 	console.log('Connection established');
 	connection.on('error',(error)=> {

@@ -3,9 +3,9 @@ const Audio = require("sound-play")
 const fs = require("fs")
 const soundboard = require('.\\sounds.json')
 
-var viewers = [];
-var active_translations = [];
-var used_soundboard = false;
+let viewers = [];
+let active_translations = [];
+let used_soundboard = false;
 
 const getmessage = (channel,userstate,message) => ("["+channel+"]:"+userstate['username']+"-"+message);
 
@@ -14,7 +14,7 @@ function messageHandler(channel, userstate, message, client,)
 	if (userstate['username']!='wmuga_bot'){
 		if (moderate(channel, userstate, message, client)){
 			test_for_new_viewer(channel,userstate['username'],client);
-			var splitted_message = message.split(opt.command_prefix);
+			let splitted_message = message.split(opt.command_prefix);
 			if ((splitted_message.length>1) && (splitted_message[0].length==0)) 
 				commandHandler(channel,userstate,splitted_message.join(''),client);
 			}
@@ -22,7 +22,7 @@ function messageHandler(channel, userstate, message, client,)
 }
 
 function moderate(channel, userstate, message, client){
-	var services = [
+	let services = [
 		'streamdetails',
 		'getviewers',
 		'bigfollows',
@@ -31,19 +31,19 @@ function moderate(channel, userstate, message, client){
 		'twitch_viewers'
 	];
 	
-	var repeatedLetters = ['eе', 'tт', 'yу', 'oо0', 'pp','aа', 'hн', 'kк', 'xх', 'cс', 'bв', 'mм', 'rг'];
+	let repeatedLetters = ['eе', 'tт', 'yу', 'oо0', 'pp','aа', 'hн', 'kк', 'xх', 'cс', 'bв', 'mм', 'rг'];
 	services = services.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')));
 	/*
-	var phrases = [
+	let phrases = [
 		'отключить рекламу напиши нам',
 		'пoдними стрим в топ',
 		'wanna become famous', 
 		'лучшее качество и самые низкие цены',
 	];
-	var forbiddenWords = [
+	let forbiddenWords = [
 		'PRIVMSG'
 	];
-	var wordCombs = [
+	let wordCombs = [
 
 	];
 	phrases = phrases.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')))
@@ -60,8 +60,8 @@ function moderate(channel, userstate, message, client){
 }
 
 function test_for_ping(channel,userstate,message){
-	var regNameLatin = /Wmuga/i;
-	var regNameRus = /[ВШ][мm][уыаay]+г/i;
+	let regNameLatin = /Wmuga/i;
+	let regNameRus = /[ВШ][мm][уыаay]+г/i;
 	if ((regNameLatin.test(message) && !(new RegExp(/Wmuga_/i).test(message)))  || (regNameRus.test(message)))
 	{
 		Audio.play(soundboard["nya"]);
@@ -92,35 +92,39 @@ function test_for_new_translation(channel,userstate,message, connection){
 	}
 }
 
+function reply(channel, userstate, client, message){
+	client.say(channel,'@' + userstate.username+' '+ message);
+}
+
 function commandHandler(channel,userstate,command,client){
-	var splitted_command = command.split(' ').filter(part => part.length>0);
+	let splitted_command = command.split(' ').filter(part => part.length>0);
 	console.log(splitted_command);
 	switch(splitted_command[0])
 	{
 		case 'help':
 		case 'хелп':
 		case 'хэлп':
-			client.say(channel,'@' + userstate.username+ ' пока никакая помощь не предусмотрена');
+			reply(channel,userstate,client,'пока никакая помощь не предусмотрена');
 			break;
 		case 'request':
 		case 'заказ':
 		case 'r':
 			if (splitted_command.length==1) 
-				client.say(channel,'@' + userstate.username+ ' Можно заказать карту osu! если есть желаение. ' + opt.command_prefix +'r/request/заказ *ссыль на карту*');
+				reply(channel,userstate,client,'Можно заказать карту osu! если есть желаение. ' + opt.command_prefix +'r/request/заказ *ссыль на карту*');
 			else{
 				console.log(splitted_command[1]);
 				if (!(/osu[.]ppy[.]sh[/]beatmapsets[/]/).test(splitted_command[1]))
-					client.say(channel,'@' + userstate.username+ ' какая-то это неправильная ссылка');
+					reply(channel,userstate,'какая-то это неправильная ссылка');
 					else{
 						fs.appendFileSync('D:\\Programms\\bot\\requests.txt', userstate.username + ' - ' +splitted_command[1]+'\n');
-						client.say(channel,'@' + userstate.username+ ' добавлено');
+						reply(channel,userstate,client,'добавлено');
 					}
 			}
 			break;
 		case 'sound':
 		case 's':
 		if (splitted_command.length==1) 
-				client.say(channel,'@' + userstate.username+ ' Можно воспроизвести различные звуки: ' + opt.command_prefix +'sound/s *название*. Их посмотреть туть: https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
+				reply(channel,userstate,client,'Можно воспроизвести различные звуки: ' + opt.command_prefix +'sound/s *название*. Их посмотреть туть: https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
 		else{
 			if (!used_soundboard){
 				if (splitted_command[1] in soundboard)
@@ -130,12 +134,28 @@ function commandHandler(channel,userstate,command,client){
 					setTimeout(() =>{ used_soundboard = false},8000);
 				}
 				else
-					client.say(channel,'@' + userstate.username+' нет такого звука');
+					reply(channel,userstate,client,'нет такого звука');
 			}
 		}
 		break;
+		case 'greeting':
+			if (userstate.username!="wmuga") reply(channel,userstate,client,'не трожь!');
+			else{	
+				opt.custom_greetings[splitted_command[1]] = splitted_command.splice(2).join(" ");
+				reply(channel,userstate,client,'добавлено');
+				fs.writeFileSync('bot_options.json',JSON.stringify(opt));
+			}
+			break;	
+		case 'add_timer':
+			if (userstate.username!="wmuga") reply(channel,userstate,client,'не трожь!');
+			else{	
+				opt.timer_messages.push(splitted_command.splice(1).join(" "));
+				reply(channel,userstate,client,'добавлено');
+				fs.writeFileSync('bot_options.json',JSON.stringify(opt));
+			}
+			break;		
 		default:
-			client.say(channel,'@' + userstate.username+ ' нет такой команды');
+			reply(channel,userstate,client,'нет такой команды');
 			break;
 	}
 }
