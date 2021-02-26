@@ -6,8 +6,27 @@ const soundboard = require('.\\sounds.json')
 let viewers = [];
 let active_translations = [];
 let used_soundboard = false;
+let isElv = false;
 
 const getmessage = (channel,userstate,message) => ("["+channel+"]:"+userstate['username']+"-"+message);
+
+function switch_layout(str) {
+	let compl_str = '';
+	str.split('').forEach(function(c){
+		const keys   = 'qwertyuiop[]asdfghjkl;\'zxcvbnm,.йцукенгшщзхъфывапролджэячсмитьбю'.split('');
+		const values = 'йцукенгшщзхъфывапролджэячсмитьбюqwertyuiop[]asdfghjkl;\'zxcvbnm,.'.split('');
+		let switchMap = new Map();
+		for (let i=0;i<keys.length;i++) switchMap.set(keys[i],values[i]);
+		compl_str += switchMap.get(c)==undefined ? c : switchMap.get(c);
+	});
+	return compl_str;
+} 
+
+function set_Elv(str){
+	if (isElv)
+		str = switch_layout(str);
+	return str;
+}
 
 function messageHandler(channel, userstate, message, client,)
 {	
@@ -98,56 +117,57 @@ function reply(channel, userstate, client, message){
 
 function commandHandler(channel,userstate,command,client){
 	let splitted_command = command.split(' ').filter(part => part.length>0);
+	if (splitted_command[0][0]>'z') {
+		isElv = true;
+		for (let i=0;i<splitted_command.length;i++) splitted_command[i] = switch_layout(splitted_command[i]);
+	}
 	console.log(splitted_command);
 	switch(splitted_command[0])
 	{
 		case 'help':
-		case 'хелп':
-		case 'хэлп':
-			reply(channel,userstate,client,'пока никакая помощь не предусмотрена');
+			reply(channel,userstate,client,set_Elv('пока никакая помощь не предусмотрена'));
 			break;
 		case 'request':
-		case 'заказ':
 		case 'r':
 			if (splitted_command.length==1) 
-				reply(channel,userstate,client,'Можно заказать карту osu! если есть желаение. ' + opt.command_prefix +'r/request/заказ *ссыль на карту*');
+				reply(channel,userstate,client,set_Elv('Можно заказать карту osu! если есть желаение. ') + opt.command_prefix +set_Elv('r/request/ *ссыль на карту*'));
 			else{
 				console.log(splitted_command[1]);
 				if (!(/osu[.]ppy[.]sh[/]beatmapsets[/]/).test(splitted_command[1]))
-					reply(channel,userstate,'какая-то это неправильная ссылка');
+					reply(channel,userstate,set_Elv('какая-то это неправильная ссылка'));
 					else{
 						fs.appendFileSync('D:\\Programms\\bot\\requests.txt', userstate.username + ' - ' +splitted_command[1]+'\n');
-						reply(channel,userstate,client,'добавлено');
+						reply(channel,userstate,client,set_Elv('добавлено'));
 					}
 			}
 			break;
 		case 'sound':
 		case 's':
 		if (splitted_command.length==1) 
-				reply(channel,userstate,client,'Можно воспроизвести различные звуки: ' + opt.command_prefix +'sound/s *название*. Их посмотреть туть: https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
+				reply(channel,userstate,client,set_Elv('Можно воспроизвести различные звуки: ') + opt.command_prefix +set_Elv('sound/s *название*. Их посмотреть туть:') + 'https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
 		else{
 			if (!used_soundboard){
 				if (splitted_command[1] in soundboard)
 				{
-					Audio.play(soundboard[splitted_command[1]]);
+					Audio.play(soundboard[splitted_command[1]],0.7);
 					used_soundboard=true;
 					setTimeout(() =>{ used_soundboard = false},8000);
 				}
 				else
-					reply(channel,userstate,client,'нет такого звука');
+					reply(channel,userstate,client,set_Elv('нет такого звука'));
 			}
 		}
 		break;
 		case 'greeting':
-			if (userstate.username!="wmuga") reply(channel,userstate,client,'не трожь!');
+			if (userstate.username!="wmuga") reply(channel,userstate,client,set_Elv('не трожь!'));
 			else{	
 				opt.custom_greetings[splitted_command[1]] = splitted_command.splice(2).join(" ");
-				reply(channel,userstate,client,'добавлено');
+				reply(channel,userstate,client,set_Elv('добавлено'));
 				fs.writeFileSync('bot_options.json',JSON.stringify(opt));
 			}
 			break;	
 		case 'add_timer':
-			if (userstate.username!="wmuga") reply(channel,userstate,client,'не трожь!');
+			if (userstate.username!="wmuga") reply(channel,userstate,client,set_Elv('не трожь!'));
 			else{	
 				opt.timer_messages.push(splitted_command.splice(1).join(" "));
 				reply(channel,userstate,client,'добавлено');
@@ -158,6 +178,11 @@ function commandHandler(channel,userstate,command,client){
 			reply(channel,userstate,client,'нет такой команды');
 			break;
 	}
+	isElv = false;
+}
+
+function raidHandler(channel,username,viewers,client){
+	Audio.play(soundboard["woah"],0.7);	
 }
 
 function pingerHandler(channel, userstate, message, connection)
@@ -182,7 +207,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
+module.exports.raidHandler = raidHandler;
 module.exports.sendAllOnline = sendAllOnline;
 module.exports.messageHandler = messageHandler;
 module.exports.pingerHandler = pingerHandler;

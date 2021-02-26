@@ -60,6 +60,14 @@ pinger.on('connected',(address,port) =>{
 	console.log("Successfully connected pinger");
 });
 
+client.on('raided',(channel, username, viewers) => {
+    eventHandler.raidHandler(channel, username, viewers,client)
+});
+
+client.on('hosted',(channel, username, viewers, autohost) => {
+    console.log(username + ' hosted with ' + viewers + ' ' + autohost);
+});
+
 function messageHandler(channel, userstate, message, self){
 	if (userstate.username!='wmuga_bot') {
 		passed_messages+=1;
@@ -68,12 +76,12 @@ function messageHandler(channel, userstate, message, self){
 			setted_timer=true;
 			setTimeout(() =>{
 				setted_timer=false;
-				if (passed_messages>2){
+				if (passed_messages>5){
 					current_timer=(current_timer+1)%opt.timer_messages.length;
 					passed_messages=0;
 					client.say(channel,opt.timer_messages[current_timer]);
 				}
-			},300000)
+			},360000)
 		}
 	}
 }
@@ -84,6 +92,7 @@ function pingerHandler(channel, userstate, message, self)
 }
 client.addListener("message",messageHandler);
 pinger.addListener("message",pingerHandler);
+
 
 let server = net.createServer(function(socket){
 	connection = socket;
