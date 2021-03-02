@@ -1,0 +1,19 @@
+.chat-container .chat .msg{
+    background-color:#01fff750;
+}
+
+.chat-container .chat{
+    font:18pt 'Roboto Condensed';
+    color: white;
+    word-break: break-word;
+    width: inherit;
+    bottom: 0;
+    position: absolute;
+}
+.chat-container{
+    position: absolute;
+    bottom: 0;
+    width: 300px;
+    height: 600px;
+    overflow-y: hidden;
+}

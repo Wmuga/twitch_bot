@@ -13,8 +13,8 @@ const getmessage = (channel,userstate,message) => ("["+channel+"]:"+userstate['u
 function switch_layout(str) {
 	let compl_str = '';
 	str.split('').forEach(function(c){
-		const keys   = 'qwertyuiop[]asdfghjkl;\'zxcvbnm,.йцукенгшщзхъфывапролджэячсмитьбю'.split('');
-		const values = 'йцукенгшщзхъфывапролджэячсмитьбюqwertyuiop[]asdfghjkl;\'zxcvbnm,.'.split('');
+		const keys   = 'QWERTYUIOP{}ASDFGHJKL:\"ZXCVBNM<>ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮqwertyuiop[]asdfghjkl;\'zxcvbnm,.йцукенгшщзхъфывапролджэячсмитьбю'.split('');
+		const values = 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮQWERTYUIOP{}ASDFGHJKL:\"ZXCVBNM<>йцукенгшщзхъфывапролджэячсмитьбюqwertyuiop[]asdfghjkl;\'zxcvbnm,.'.split('');
 		let switchMap = new Map();
 		for (let i=0;i<keys.length;i++) switchMap.set(keys[i],values[i]);
 		compl_str += switchMap.get(c)==undefined ? c : switchMap.get(c);
@@ -116,7 +116,7 @@ function reply(channel, userstate, client, message){
 }
 
 function commandHandler(channel,userstate,command,client){
-	let splitted_command = command.split(' ').filter(part => part.length>0);
+	let splitted_command = command.toLowerCase().split(' ').filter(part => part.length>0);
 	if (splitted_command[0][0]>'z') {
 		isElv = true;
 		for (let i=0;i<splitted_command.length;i++) splitted_command[i] = switch_layout(splitted_command[i]);
@@ -144,7 +144,7 @@ function commandHandler(channel,userstate,command,client){
 		case 'sound':
 		case 's':
 		if (splitted_command.length==1) 
-				reply(channel,userstate,client,set_Elv('Можно воспроизвести различные звуки: ') + opt.command_prefix +set_Elv('sound/s *название*. Их посмотреть туть:') + 'https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
+				reply(channel,userstate,client,set_Elv('Можно воспроизвести различные звуки: ') + opt.command_prefix +set_Elv('sound/s *название*. Их посмотреть туть:') + ' https://docs.google.com/spreadsheets/d/12SQum-pyn170L1vffYvdLqGcLZIU7ndGKwJiGdnkkQ4/edit?usp=sharing');
 		else{
 			if (!used_soundboard){
 				if (splitted_command[1] in soundboard)
@@ -158,22 +158,6 @@ function commandHandler(channel,userstate,command,client){
 			}
 		}
 		break;
-		case 'greeting':
-			if (userstate.username!="wmuga") reply(channel,userstate,client,set_Elv('не трожь!'));
-			else{	
-				opt.custom_greetings[splitted_command[1]] = splitted_command.splice(2).join(" ");
-				reply(channel,userstate,client,set_Elv('добавлено'));
-				fs.writeFileSync('bot_options.json',JSON.stringify(opt));
-			}
-			break;	
-		case 'add_timer':
-			if (userstate.username!="wmuga") reply(channel,userstate,client,set_Elv('не трожь!'));
-			else{	
-				opt.timer_messages.push(splitted_command.splice(1).join(" "));
-				reply(channel,userstate,client,'добавлено');
-				fs.writeFileSync('bot_options.json',JSON.stringify(opt));
-			}
-			break;		
 		default:
 			reply(channel,userstate,client,'нет такой команды');
 			break;

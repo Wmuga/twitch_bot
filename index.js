@@ -2,8 +2,11 @@ const tmi = require('tmi.js');
 const eventHandler = require('.\\handlers.js');
 const enc = require('.\\crypt.js')
 const opt = require('.\\bot_options.json')
+const concomands = require('.\\concomands.js')
 const net = require('net')
 const fs = require('fs')
+let readline = require('readline')
+
 
 let passed_messages =0;
 let current_timer = 0;
@@ -76,7 +79,7 @@ function messageHandler(channel, userstate, message, self){
 			setted_timer=true;
 			setTimeout(() =>{
 				setted_timer=false;
-				if (passed_messages>5){
+				if (passed_messages>4){
 					current_timer=(current_timer+1)%opt.timer_messages.length;
 					passed_messages=0;
 					client.say(channel,opt.timer_messages[current_timer]);
@@ -105,3 +108,12 @@ let server = net.createServer(function(socket){
 });
 
 server.listen(6555);
+
+let coninput = readline.createInterface({
+	input:process.stdin,
+	output:process.stdout
+});
+
+coninput.on('line', (input) =>{
+	concomands.handler(input);
+})
