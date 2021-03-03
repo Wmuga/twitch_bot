@@ -195,3 +195,4 @@ module.exports.raidHandler = raidHandler;
 module.exports.sendAllOnline = sendAllOnline;
 module.exports.messageHandler = messageHandler;
 module.exports.pingerHandler = pingerHandler;
+module.exports.getmessage = getmessage;

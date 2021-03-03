@@ -42,19 +42,19 @@ function add_new_message(userstate,message){
         let messages = document.getElementsByClassName('msg');
         messages[0].parentElement.removeChild(messages[0]);
     }
-    let p = document.createElement('p');
+    let new_msg = document.createElement('div');
     let filter = document.createElement('p');
     filter.innerHTML = message;
     for (let badge in userstate.badges)
         {
-            p.innerHTML+="<img src="+badges[badge]['versions'][userstate.badges[badge]]['image_url_1x']+">";
+            new_msg.innerHTML+="<img src="+badges[badge]['versions'][userstate.badges[badge]]['image_url_1x']+">";
         }
     let username = document.createElement('div')  ;
     username.style.color = userstate.color==null ? white : userstate.color; 
     username.innerHTML = userstate['display-name']; 
-    p.innerHTML += username.outerHTML+emote_parse(userstate.emotes,filter.innerText);
-    p.classList.add('msg');
-    document.getElementsByClassName('chat')[0].appendChild(p);
+    new_msg.innerHTML += username.outerHTML+emote_parse(userstate.emotes,filter.innerText);
+    new_msg.classList.add('msg');
+    document.getElementsByClassName('chat')[0].appendChild(new_msg);
 }
 
 const client = new tmi.client(options);

@@ -73,24 +73,26 @@ client.on('hosted',(channel, username, viewers, autohost) => {
 
 function messageHandler(channel, userstate, message, self){
 	if (userstate.username!='wmuga_bot') {
-		passed_messages+=1;
-		eventHandler.messageHandler(channel, userstate, message, client);
-		if (!setted_timer){
-			setted_timer=true;
-			setTimeout(() =>{
-				setted_timer=false;
-				if (passed_messages>4){
-					current_timer=(current_timer+1)%opt.timer_messages.length;
-					passed_messages=0;
-					client.say(channel,opt.timer_messages[current_timer]);
-				}
-			},360000)
+		if (channel == '#wmuga'){
+			eventHandler.messageHandler(channel, userstate, message, client);
+			if (!setted_timer){
+				setted_timer=true;
+				setTimeout(() =>{
+					setted_timer=false;
+					if (passed_messages>4){
+						current_timer=(current_timer+1)%opt.timer_messages.length;
+						passed_messages=0;
+						client.say(channel,opt.timer_messages[current_timer]);
+					}
+				},360000)
+			}
 		}
 	}
 }
 
 function pingerHandler(channel, userstate, message, self)
 {
+	if (opt.listen.includes(channel.slice(1))) console.log(eventHandler.getmessage(channel,userstate,message));
 	eventHandler.pingerHandler(channel, userstate, message,connection);
 }
 client.addListener("message",messageHandler);
@@ -115,5 +117,30 @@ let coninput = readline.createInterface({
 });
 
 coninput.on('line', (input) =>{
-	concomands.handler(input);
+	let response = concomands.handler(input);
+	console.log(response);
+	if (response[0]){
+		switch(response[0]){
+			default:
+				break;
+			case 'listen':
+				opt['listen'].push(response[1]);
+				break;
+			case 'stop_listen':
+				opt['listen'] = opt['listen'].filter(elem => elem!=response[1]);
+				break;	
+			case 'send':{
+				let sent_channel = '#'+response[1];
+				if (sent_channel !='#wmuga'){
+					client.join(sent_channel).then(() => {
+					client.say(sent_channel,response[2]);
+					client.part(sent_channel);
+					});
+				}
+				else{
+					client.say(sent_channel,response[2]);
+				}
+			}	
+		}
+	}
 })
