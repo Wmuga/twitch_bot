@@ -93,7 +93,7 @@ function test_new_translation(channel){
 
 function remove_translation(channel){
 	if (active_translations.includes(channel.toLowerCase())){
-		active_translations.filter(name => name!=channel.toLowerCase());
+		active_translations = active_translations.filter(name => name!=channel.toLowerCase());
 		Audio.play(soundboard["nya"]);
 		console.log(`на ${channel} закончилась движуха`);
 	}
