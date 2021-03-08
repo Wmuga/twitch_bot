@@ -52,23 +52,6 @@ function moderate(channel, userstate, message, client){
 	
 	let repeatedLetters = ['eе', 'tт', 'yу', 'oо0', 'pp','aа', 'hн', 'kк', 'xх', 'cс', 'bв', 'mм', 'rг'];
 	services = services.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')));
-	/*
-	let phrases = [
-		'отключить рекламу напиши нам',
-		'пoдними стрим в топ',
-		'wanna become famous', 
-		'лучшее качество и самые низкие цены',
-	];
-	let forbiddenWords = [
-		'PRIVMSG'
-	];
-	let wordCombs = [
-
-	];
-	phrases = phrases.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')))
-	forbiddenWords = forbiddenWords.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')))
-	wordCombs = wordCombs.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')))
-	*/
 	if ((new RegExp(services.join('|'), 'ig')).test(message)) 
 	{
 		console.log(userstate['username'] + " нарвался на бананду за спам");
@@ -79,9 +62,8 @@ function moderate(channel, userstate, message, client){
 }
 
 function test_for_ping(channel,userstate,message){
-	let regNameLatin = /Wmuga/i;
-	let regNameRus = /[ВШ][мm][уыаay]+г/i;
-	if ((regNameLatin.test(message) && !(new RegExp(/Wmuga_/i).test(message)))  || (regNameRus.test(message)))
+	let regex = /(([^а-яё]|^)[bвшw]+[мm]+[уыаyau]+[гg]+(а|и|е|у|ой|a)*([^а-яё_a-z]|$)+)/ig;
+	if (regex.test(message))
 	{
 		Audio.play(soundboard["nya"]);
 		console.log("Пинганули");
@@ -101,13 +83,19 @@ function test_for_new_viewer(channel,username,client){
 	}
 }
 
-function test_for_new_translation(channel,userstate,message, connection){
+function test_new_translation(channel){
 	if (!active_translations.includes(channel.toLowerCase())){
 		active_translations.push(channel.toLowerCase());
 		Audio.play(soundboard["nya"]);
-		if (connection) connection.write("tOn"+channel+opt.tcp_message_splitter);
-		console.log("на " +channel + " началась движуха");
-		console.log(getmessage(channel,userstate,message));
+		console.log(`на ${channel} началась движуха`);
+	}
+}
+
+function remove_translation(channel){
+	if (active_translations.includes(channel.toLowerCase())){
+		active_translations.filter(name => name!=channel.toLowerCase());
+		Audio.play(soundboard["nya"]);
+		console.log(`на ${channel} закончилась движуха`);
 	}
 }
 
@@ -149,9 +137,14 @@ function commandHandler(channel,userstate,command,client){
 			if (!used_soundboard){
 				if (splitted_command[1] in soundboard)
 				{
+					if (splitted_command[1]=='ugu') {
+						client.color('DodgerBlue');
+						client.say(channel,'Ууугу');
+					}
 					Audio.play(soundboard[splitted_command[1]],0.7);
 					used_soundboard=true;
 					setTimeout(() =>{ used_soundboard = false},8000);
+					if (splitted_command[1]=='ugu') client.color('OrangeRed');
 				}
 				else
 					reply(channel,userstate,client,set_Elv('нет такого звука'));
@@ -171,16 +164,12 @@ function raidHandler(channel,username,viewers,client){
 
 function pingerHandler(channel, userstate, message, connection)
 {
-	if((connection) && (channel!="#wmuga")) connection.write('msg'+getmessage(channel,userstate,message)+opt.tcp_message_splitter);
-	if(userstate['username']!='wmuga') test_for_ping(channel,userstate,message);
-	if(userstate['username']!='twistr_shade') test_for_new_translation(channel,userstate,message, connection);
+	if ((connection) && (channel!="#wmuga")) connection.write('msg'+getmessage(channel,userstate,message)+opt.tcp_message_splitter);
+	if (userstate['username']!='wmuga') test_for_ping(channel,userstate,message);
+	if (!active_translations.includes(channel.slice(1))) console.log(getmessage(channel,userstate,message)); 
 }
 
 async function sendAllOnline(connection){
-	active_translations.forEach(tr => {
-		connection.write("tOn"+tr+opt.tcp_message_splitter);
-		sleep(100);
-	});
 	viewers.forEach(v => {
 		connection.write("nuj"+v+opt.tcp_message_splitter);
 		sleep(100);
@@ -196,3 +185,6 @@ module.exports.sendAllOnline = sendAllOnline;
 module.exports.messageHandler = messageHandler;
 module.exports.pingerHandler = pingerHandler;
 module.exports.getmessage = getmessage;
+
+module.exports.test_new_translation = test_new_translation;
+module.exports.remove_translation = remove_translation;

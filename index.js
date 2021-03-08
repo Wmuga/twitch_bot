@@ -4,14 +4,16 @@ const enc = require('.\\crypt.js')
 const opt = require('.\\bot_options.json')
 const concomands = require('.\\concomands.js')
 const net = require('net')
-const fs = require('fs')
-let readline = require('readline')
+const http = require('http')
+const twitch_api = require('.\\twitch_requests')
+let readline = require('readline');
 
 
 let passed_messages =0;
 let current_timer = 0;
 let setted_timer = false;
 
+//bot stuff
 const options_bot = {
     options: {
         debug:false,
@@ -26,6 +28,8 @@ const options_bot = {
     channels: ['wmuga'],
 };
 
+let listening_channels = ['wmuga','iarspider','cwelth','nuriksakura','twistr_game','moar__','prayda_alpha','babytigeronthesunflower','jon_cs','rustamdobryi','womens_games','kochetov2000','mr_alfa44','owlsforever'];
+
 const options_pinger = {
     options: {
         debug:false,
@@ -33,7 +37,7 @@ const options_pinger = {
     connection: {
         reconnect: true,
     },
-    channels: ['wmuga','iarspider','cwelth','nuriksakura','twistr_game','moar__','prayda_alpha','babytigeronthesunflower','jon_cs','rustamdobryi','womens_games','kochetov2000','mr_alfa44','owlsforever'],
+    channels: listening_channels,
 };
 
 console.log('Awaiting client connection');
@@ -74,6 +78,7 @@ client.on('hosted',(channel, username, viewers, autohost) => {
 function messageHandler(channel, userstate, message, self){
 	if (userstate.username!='wmuga_bot') {
 		if (channel == '#wmuga'){
+			passed_messages+=1;
 			eventHandler.messageHandler(channel, userstate, message, client);
 			if (!setted_timer){
 				setted_timer=true;
@@ -98,7 +103,35 @@ function pingerHandler(channel, userstate, message, self)
 client.addListener("message",messageHandler);
 pinger.addListener("message",pingerHandler);
 
+//Custom events 
 
+async function check_follows(){
+	while (true){
+		await new Promise(resolve => setTimeout(resolve,1000));
+		let new_follower = await twitch_api.get_new_follow(164555591);
+		if (new_follower!='') client.say('#wmuga',`@${new_follower}, спасибо за фоллоу!`);
+	}
+}
+
+async function check_streams(){
+	while (true){
+		for(let name in listening_channels){
+			name = listening_channels[name].slice(1);
+			if (name!='wmuga'){
+				let info = await twitch_api.get_stream_info(name);
+				if (info.data.length!=0) eventHandler.test_new_translation(name);
+				else eventHandler.remove_translation(name);
+			}
+			await new Promise(resolve => setTimeout(resolve,500));
+		}
+		await new Promise(resolve => setTimeout(resolve,5000));
+	}
+}
+
+check_follows();
+check_streams();
+
+//socket server
 let server = net.createServer(function(socket){
 	connection = socket;
 	console.log('Connection established');
@@ -111,6 +144,8 @@ let server = net.createServer(function(socket){
 
 server.listen(6555);
 
+
+//interractive console
 let coninput = readline.createInterface({
 	input:process.stdin,
 	output:process.stdout
@@ -144,3 +179,28 @@ coninput.on('line', (input) =>{
 		}
 	}
 })
+
+//HTTP server for sending config to overlay
+
+const http_server_listener = function(req,res){
+	console.log('Request to '+ req.url)
+	res.setHeader('Content-Type','application/json');
+	res.setHeader('Access-Control-Allow-Origin','*')
+	switch (req.url){
+		case '/config':
+			res.writeHead(200);
+			const config_file = require('.\\overlay\\config.json');
+			res.end(JSON.stringify(config_file));
+			break;
+		default:
+			res.writeHead(404);
+            res.end(JSON.stringify({error:"Resource not found"}))
+			break;
+	}
+	res.end();
+}
+
+const http_server = http.createServer(http_server_listener);
+http_server.listen(6556,'localhost',()=>{
+	console.log('HTTP server on localhost:6556 is running')
+});

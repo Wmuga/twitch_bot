@@ -25,7 +25,6 @@ function parse_emote_data(data){
 }
 
 function emote_parse(emotes,message){
-    let new_msg = '';
     emotes = parse_emote_data(emotes);
     splitted_message=message.split(' ');
     for (let id in emotes){
@@ -49,8 +48,8 @@ function add_new_message(userstate,message){
         {
             new_msg.innerHTML+="<img src="+badges[badge]['versions'][userstate.badges[badge]]['image_url_1x']+">";
         }
-    let username = document.createElement('div')  ;
-    username.style.color = userstate.color==null ? white : userstate.color; 
+    let username = document.createElement('div');
+    username.style.color = userstate.color==undefined ? white : userstate.color; 
     username.innerHTML = userstate['display-name']; 
     new_msg.innerHTML += username.outerHTML+emote_parse(userstate.emotes,filter.innerText);
     new_msg.classList.add('msg');
