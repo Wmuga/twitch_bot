@@ -3,7 +3,6 @@ const eventHandler = require('.\\handlers.js');
 const enc = require('.\\crypt.js')
 const opt = require('.\\bot_options.json')
 const concomands = require('.\\concomands.js')
-const net = require('net')
 const http = require('http')
 const twitch_api = require('.\\twitch_requests')
 let readline = require('readline');
@@ -28,48 +27,20 @@ const options_bot = {
     channels: ['wmuga'],
 };
 
-let listening_channels = ['wmuga','iarspider','cwelth','nuriksakura','twistr_game','moar__','prayda_alpha','babytigeronthesunflower','jon_cs','rustamdobryi','womens_games','kochetov2000','mr_alfa44','owlsforever'];
-
-const options_pinger = {
-    options: {
-        debug:false,
-    },
-    connection: {
-        reconnect: true,
-    },
-    channels: listening_channels,
-};
-
 console.log('Awaiting client connection');
 
-let connection = null;
 
 const client = new tmi.Client(options_bot);
-const pinger = new tmi.Client(options_pinger);
+
 
 client.connect();
-pinger.connect();
+
 
 
 client.on('connected',(address,port) =>{
 	console.log("Successfully connected client");
 });
 
-client.on('join',(channel,username) =>{
-	if(connection) connection.write('ujc'+username+opt.tcp_message_splitter);
-});
-	
-client.on('part',(channel,username) =>{
-	if(connection) connection.write('upc'+username+opt.tcp_message_splitter);
-});
-
-pinger.on('connected',(address,port) =>{
-	console.log("Successfully connected pinger");
-});
-
-client.on('raided',(channel, username, viewers) => {
-    eventHandler.raidHandler(channel, username, viewers,client)
-});
 
 client.on('hosted',(channel, username, viewers, autohost) => {
     console.log(username + ' hosted with ' + viewers + ' ' + autohost);
@@ -95,26 +66,16 @@ function messageHandler(channel, userstate, message, self){
 	}
 }
 
-function pingerHandler(channel, userstate, message, self)
-{
-	if (opt.listen.includes(channel.slice(1))) console.log(eventHandler.getmessage(channel,userstate,message));
-	eventHandler.pingerHandler(channel, userstate, message,connection);
-}
+
 client.addListener("message",messageHandler);
-pinger.addListener("message",pingerHandler);
+
 
 //Custom events 
 
-async function check_follows(){
-	while (true){
-		await new Promise(resolve => setTimeout(resolve,1000));
-		let new_follower = await twitch_api.get_new_follow(164555591);
-		if (new_follower!='') client.say('#wmuga',`@${new_follower}, спасибо за фоллоу!`);
-	}
-}
-
 async function check_streams(){
 	while (true){
+		let new_follower = await twitch_api.get_new_follow(164555591);
+		if (new_follower!='') client.say('#wmuga',`@${new_follower}, спасибо за фоллоу!`);
 		for(let name in listening_channels){
 			name = listening_channels[name].slice(1);
 			if (name!='wmuga'){
@@ -128,21 +89,7 @@ async function check_streams(){
 	}
 }
 
-check_follows();
-check_streams();
-
-//socket server
-let server = net.createServer(function(socket){
-	connection = socket;
-	console.log('Connection established');
-	connection.on('error',(error)=> {
-		connection=null;
-		console.log('Connection closed: ' + error);
-});
-	eventHandler.sendAllOnline(connection);
-});
-
-server.listen(6555);
+//check_streams();
 
 
 //interractive console
@@ -183,7 +130,6 @@ coninput.on('line', (input) =>{
 //HTTP server for sending config to overlay
 
 const http_server_listener = function(req,res){
-	console.log('Request to '+ req.url)
 	res.setHeader('Content-Type','application/json');
 	res.setHeader('Access-Control-Allow-Origin','*')
 	switch (req.url){
@@ -191,6 +137,17 @@ const http_server_listener = function(req,res){
 			res.writeHead(200);
 			const config_file = require('.\\overlay\\config.json');
 			res.end(JSON.stringify(config_file));
+			break;
+		case '/requests':
+			if (eventHandler.request_video_list.length>0){
+				res.writeHead(200);
+				res.end(JSON.stringify(eventHandler.request_video_list[0]))
+				eventHandler.pop_request()
+			}	
+			else{
+				res.writeHead(200)
+				res.end('null')
+			}
 			break;
 		default:
 			res.writeHead(404);

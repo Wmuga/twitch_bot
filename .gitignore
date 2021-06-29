@@ -1,0 +1,13 @@
+bot_options.json
+package.json
+package-lock.json
+soundboard/*
+*.bat
+.mp3
+.idea/*
+node_modules/
+overlay/config.json
+overlay/tmi.min.js
+overlay/test/*
+overlay/*.ttf
+crypt.js

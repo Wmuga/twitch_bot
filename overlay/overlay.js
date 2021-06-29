@@ -8,6 +8,12 @@ const options = {
     channels: ['wmuga'],
 };
 
+
+let can_request = false
+let playerReady = false
+let isPlaying = false
+let player
+
 let xhr = new XMLHttpRequest();
 xhr.open('GET','https://badges.twitch.tv/v1/badges/global/display',false);
 xhr.send();
@@ -56,16 +62,172 @@ function add_new_message(userstate,message){
     document.getElementsByClassName('chat')[0].appendChild(new_msg);
 }
 
+function check_for_commands(username,message){
+    if(message[0]=='!'){
+        message = message.substring(1)
+        let splitted_message = message.split(' ')
+        switch (splitted_message[0]){
+            case 'sr-start':
+                if (username == 'Wmuga') {
+                    let song_overlay = document.getElementsByClassName('song-overlay')[0]
+                    song_overlay.hidden = false
+                }
+                break;
+            case 'sr-close':
+                if (username == 'Wmuga') {
+                    let song_overlay = document.getElementsByClassName('song-overlay')[0]
+                    song_overlay.hidden = true
+                }
+                break;    
+            case 'sr-skip':
+                if (username == 'Wmuga') {
+                    player.seekTo(player.getDuration(),true)
+                }  
+                break; 
+            default:
+                break;        
+        }
+    }
+}
+
 const client = new tmi.client(options);
 
 console.log('Connecting')
 
 client.on('message',(channel,userstate,message) =>{
     add_new_message(userstate,message);
+    check_for_commands(userstate['display-name'],message);
 });
 
 client.on('connected',() =>{
     console.log('connected');
 });
 
+client.on('raided',(channel, username, viewers) =>{
+    add_new_event('raid',username);
+})
+
 client.connect();
+
+//Events
+event_array = [];
+
+function add_new_event(_event,_name){
+    event_array.splice(0,0,{
+        event:_event,
+        name:_name
+    })
+}
+
+function play_sound(sound_class){
+    let audio = document.getElementsByClassName(sound_class)[0];
+    audio.autoplay = true;
+    audio.play();
+}
+
+function set_follow_event(name){
+    let event = document.createElement('div');
+    event.classList.add('event');
+    event.innerText = `Спасибо за фоллоу, ${name}`;
+    document.getElementsByClassName('event_overlay')[0].appendChild(event);
+    play_sound('follow-sound');
+    return new Promise(resolve => setTimeout(function(){
+        let rem = document.getElementsByClassName('event')[0];
+        rem.parentNode.removeChild(rem);
+        resolve();
+    },3000))
+}
+
+function set_raid_event(name){
+    let event = document.createElement('div');
+    event.classList.add('event');
+    event.innerText = `Воу! рейд от ${name}`;
+    document.getElementsByClassName('event_overlay')[0].appendChild(event);
+    play_sound('raid-sound');
+    return new Promise(resolve => setTimeout(function(){
+        let rem = document.getElementsByClassName('event')[0];
+        rem.parentNode.removeChild(rem);
+        resolve();
+    },2500))
+}
+
+async function resolve_events(){
+    while(true){
+        if (event_array.length>0){
+            let event = event_array.pop();
+            switch (event.event){
+                default:
+                    break;
+                case ('follow'):
+                    await set_follow_event(event.name);
+                    break;   
+                case ('raid'):
+                    await set_raid_event(event.name);
+                    break;
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve,500));
+    }
+}
+
+async function check_events(){
+    while(true){
+        let follow = get_new_follow(164555591);
+        if (follow!='') add_new_event('follow',follow);
+        await new Promise(resolve => setTimeout(resolve,3000));
+    }
+}
+function onYouTubePlayerAPIReady() {
+    console.log('Player is ready')
+    playerReady =true
+}
+
+async function check_music() {
+    while (true)
+    {
+        if (playerReady && !isPlaying) 
+        {
+            let data = request('GET','http://localhost:6556/requests')
+            if (data !='null'){
+                data = JSON.parse(data)
+                document.getElementsByClassName('artist')[0].innerHTML = data['Channel']
+                document.getElementsByClassName('song-name')[0].innerHTML = data['Title']
+                play_yt(data['id'])
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve,1000));
+    }
+    
+}
+
+function play_yt(id){
+    isPlaying = true
+    console.log(`playing ${id}`)
+    if (!player)
+    {
+        player = new YT.Player('player', {
+        videoId: id, 
+        loop : false,
+        events: {
+            onReady: function (event) {
+                event.target.playVideo();
+            },
+            onStateChange: function (event) {
+                if (event.data == YT.PlayerState.ENDED || event.data == YT.PlayerState.PAUSED) {
+                    isPlaying = false
+                }
+                if (event.data == YT.PlayerState.CUED){
+                    event.target.playVideo()
+                }
+            }
+        }
+    });
+    }   
+    else{
+        player.cueVideoById(id,0,'small')
+    } 
+}
+
+check_events();
+resolve_events();
+check_music();

@@ -7,7 +7,12 @@ function request(_method,_url,_headers){
     }
     if (_headers) req_options.headers = _headers;
     return new Promise(resolve =>{
-        req(req_options,function(error, response,body){
+        req(req_options,async function(error, response,body){
+            if (error) {
+                console.log(error);
+                body = await request(_method,_url,_headers);
+                resolve(body);
+            }
             resolve(JSON.parse(body))
         })
     });
@@ -24,7 +29,6 @@ function request_secret(){
 }
 
 
-let token = 'no_token';
 
 async function request_token_json(){
     let url = 'https://id.twitch.tv/oauth2/token';
@@ -35,13 +39,7 @@ async function request_token_json(){
 }
 
 async function request_token(){
-    if (token=='no_token') {
-        let res= await request_token_json();
-        setTimeout(()=>{
-            token = 'no_token';
-        },res.expires_in/3);
-        token = res.access_token;
-    }
+    let token = (await request_token_json()).access_token;
     return `Bearer ${token}`;
 }
 
@@ -80,5 +78,6 @@ async function get_stream_info(channel_name){
     return await request('GET',`https://api.twitch.tv/helix/streams?user_login=${channel_name}`,await get_helix_headers());
 } 
 
+module.exports.request = request;
 module.exports.get_new_follow = get_new_follow;
 module.exports.get_stream_info = get_stream_info;
