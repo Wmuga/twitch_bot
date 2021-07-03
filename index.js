@@ -6,6 +6,7 @@ const concomands = require('.\\concomands.js')
 const http = require('http')
 const twitch_api = require('.\\twitch_requests')
 let readline = require('readline');
+const { set_token_updater } = require('./spotify_module.js');
 
 
 let passed_messages =0;
@@ -35,7 +36,7 @@ const client = new tmi.Client(options_bot);
 
 client.connect();
 
-
+eventHandler.set_token_updater()
 
 client.on('connected',(address,port) =>{
 	console.log("Successfully connected client");
@@ -68,29 +69,6 @@ function messageHandler(channel, userstate, message, self){
 
 
 client.addListener("message",messageHandler);
-
-
-//Custom events 
-
-async function check_streams(){
-	while (true){
-		let new_follower = await twitch_api.get_new_follow(164555591);
-		if (new_follower!='') client.say('#wmuga',`@${new_follower}, спасибо за фоллоу!`);
-		for(let name in listening_channels){
-			name = listening_channels[name].slice(1);
-			if (name!='wmuga'){
-				let info = await twitch_api.get_stream_info(name);
-				if (info.data.length!=0) eventHandler.test_new_translation(name);
-				else eventHandler.remove_translation(name);
-			}
-			await new Promise(resolve => setTimeout(resolve,500));
-		}
-		await new Promise(resolve => setTimeout(resolve,5000));
-	}
-}
-
-//check_streams();
-
 
 //interractive console
 let coninput = readline.createInterface({
@@ -130,24 +108,17 @@ coninput.on('line', (input) =>{
 //HTTP server for sending config to overlay
 
 const http_server_listener = function(req,res){
-	res.setHeader('Content-Type','application/json');
+	res.setHeader('Content-Type','application/json')
 	res.setHeader('Access-Control-Allow-Origin','*')
 	switch (req.url){
 		case '/config':
 			res.writeHead(200);
-			const config_file = require('.\\overlay\\config.json');
+			const config_file = require('.\\overlay\\config.json')
 			res.end(JSON.stringify(config_file));
 			break;
 		case '/requests':
-			if (eventHandler.request_video_list.length>0){
-				res.writeHead(200);
-				res.end(JSON.stringify(eventHandler.request_video_list[0]))
-				eventHandler.pop_request()
-			}	
-			else{
-				res.writeHead(200)
-				res.end('null')
-			}
+			res.writeHead(200);
+			res.end(JSON.stringify(eventHandler.currently_playing()))
 			break;
 		default:
 			res.writeHead(404);
@@ -161,3 +132,6 @@ const http_server = http.createServer(http_server_listener);
 http_server.listen(6556,'localhost',()=>{
 	console.log('HTTP server on localhost:6556 is running')
 });
+
+//setInterval(eventHandler.resolve_music_requests,1000)
+eventHandler.resolve_music_requests()

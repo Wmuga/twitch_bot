@@ -9,11 +9,6 @@ const options = {
 };
 
 
-let can_request = false
-let playerReady = false
-let isPlaying = false
-let player
-
 let xhr = new XMLHttpRequest();
 xhr.open('GET','https://badges.twitch.tv/v1/badges/global/display',false);
 xhr.send();
@@ -55,7 +50,7 @@ function add_new_message(userstate,message){
             new_msg.innerHTML+="<img src="+badges[badge]['versions'][userstate.badges[badge]]['image_url_1x']+">";
         }
     let username = document.createElement('div');
-    username.style.color = userstate.color==undefined ? white : userstate.color; 
+    username.style.color = userstate.color==null ? white : userstate.color; 
     username.innerHTML = userstate['display-name']; 
     new_msg.innerHTML += username.outerHTML+emote_parse(userstate.emotes,filter.innerText);
     new_msg.classList.add('msg');
@@ -79,11 +74,6 @@ function check_for_commands(username,message){
                     song_overlay.hidden = true
                 }
                 break;    
-            case 'sr-skip':
-                if (username == 'Wmuga') {
-                    player.seekTo(player.getDuration(),true)
-                }  
-                break; 
             default:
                 break;        
         }
@@ -177,55 +167,22 @@ async function check_events(){
         await new Promise(resolve => setTimeout(resolve,3000));
     }
 }
-function onYouTubePlayerAPIReady() {
-    console.log('Player is ready')
-    playerReady =true
-}
 
 async function check_music() {
     while (true)
     {
-        if (playerReady && !isPlaying) 
-        {
-            let data = request('GET','http://localhost:6556/requests')
-            if (data !='null'){
-                data = JSON.parse(data)
-                document.getElementsByClassName('artist')[0].innerHTML = data['Channel']
-                document.getElementsByClassName('song-name')[0].innerHTML = data['Title']
-                play_yt(data['id'])
-            }
+        let data = request('GET','http://localhost:6556/requests')
+        if (data && data !='\"null\"'){
+            data = JSON.parse(data)
+            document.getElementsByClassName('artist')[0].innerHTML = data['Channel']
+            document.getElementsByClassName('song-name')[0].innerHTML = data['Title']
+        }else{
+            document.getElementsByClassName('artist')[0].innerHTML = 'Artist'
+            document.getElementsByClassName('song-name')[0].innerHTML = 'Title'
         }
         await new Promise(resolve => setTimeout(resolve,1000));
     }
     
-}
-
-function play_yt(id){
-    isPlaying = true
-    console.log(`playing ${id}`)
-    if (!player)
-    {
-        player = new YT.Player('player', {
-        videoId: id, 
-        loop : false,
-        events: {
-            onReady: function (event) {
-                event.target.playVideo();
-            },
-            onStateChange: function (event) {
-                if (event.data == YT.PlayerState.ENDED || event.data == YT.PlayerState.PAUSED) {
-                    isPlaying = false
-                }
-                if (event.data == YT.PlayerState.CUED){
-                    event.target.playVideo()
-                }
-            }
-        }
-    });
-    }   
-    else{
-        player.cueVideoById(id,0,'small')
-    } 
 }
 
 check_events();

@@ -18,6 +18,24 @@ function request(_method,_url,_headers){
     });
 }
 
+function request_no_json(_method,_url,_headers){
+    let req_options = {
+        method:_method,
+        url:_url,
+    }
+    if (_headers) req_options.headers = _headers;
+    return new Promise(resolve =>{
+        req(req_options,async function(error, response,body){
+            if (error) {
+                console.log(error);
+                body = await request(_method,_url,_headers);
+                resolve(body);
+            }
+            resolve(body)
+        })
+    });
+}
+
 function request_id(){
     const config_file = require('.\\overlay\\config.json');
     return config_file.id;

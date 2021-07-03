@@ -1,15 +1,16 @@
 const opt = require('.\\bot_options.json')
 const Audio = require("sound-play")
-const fs = require("fs")
 const soundboard = require('.\\sounds.json');
+const ytm = require('.\\youtube_music.js');
+const spoty = require('.\\spotify_module.js')
 
 let viewers = [];
-let active_translations = [];
 let used_soundboard = false;
 let isElv = false;
 let isReq = false;
 let request_users_list = []
 let request_video_list = []
+let currently_playing = 'null'
 
 const getmessage = (channel,userstate,message) => ("["+channel+"]:"+userstate['username']+"-"+message);
 
@@ -77,40 +78,29 @@ function test_for_new_viewer(channel,username,client){
 	}
 }
 
-function test_new_translation(channel){
-	if (!active_translations.includes(channel.toLowerCase())){
-		active_translations.push(channel.toLowerCase());
-		Audio.play(soundboard["nya"]);
-		console.log(`на ${channel} началась движуха`);
-	}
-}
-
-function remove_translation(channel){
-	if (active_translations.includes(channel.toLowerCase())){
-		active_translations = active_translations.filter(name => name!=channel.toLowerCase());
-		Audio.play(soundboard["nya"]);
-		console.log(`на ${channel} закончилась движуха`);
-	}
-}
 
 async function add_request(channel,userstate,client,data){
 	let username = userstate['display-name']
 	if (request_users_list.includes(username)){
 		reply(channel,userstate,client,'уже есть твой заказ')
 	}else{
-		request_users_list.push(username)
-		if (new RegExp('www.youtube.com/watch','ig').test(data.split(' ')[0])){
+		let videodata
+		if (new RegExp('youtube.com/watch','ig').test(data.split(' ')[0])){
 			let id = (data.split(' ')[0].split('v=')[1].split('&')[0])
-			let videodata = await require('.\\twitch_requests').request('GET',`https://www.googleapis.com/youtube/v3/videos?id=${id}&key=${opt.youtube_api_key}&part=snippet`)
-			request_video_list.push({"id":id,
-									"Title":videodata['items'][0]['title'],
-									"Channel":videodata['items'][0]['channelTitle']})
+			videodata = await require('.\\twitch_requests').request('GET',`https://www.googleapis.com/youtube/v3/videos?id=${id}&key=${opt.youtube_api_key}&part=snippet`)
 		}
 		else{
-			let videodata = await require('.\\twitch_requests').request('GET',encodeURI(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${data}&type=video&key=${opt.youtube_api_key}`))
+			videodata = await require('.\\twitch_requests').request('GET',encodeURI(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${data}&type=video&key=${opt.youtube_api_key}`))
+		}
+		if (videodata['items'].length>0){
+			request_users_list.push(username)
 			request_video_list.push({"id":videodata['items'][0]['id']['videoId'],
 									"Title":videodata['items'][0]['snippet']['title'],
 									"Channel":videodata['items'][0]['snippet']['channelTitle']})
+			client.say(channel,`${videodata['items'][0]['snippet']['channelTitle']}-${videodata['items'][0]['snippet']['title']} добавлен в очередь. #${request_users_list.length} в очереди`)						
+		}
+		else{
+			reply(channel,userstate,client,'Не нашел такого')
 		}
 	}
 }
@@ -118,6 +108,28 @@ async function add_request(channel,userstate,client,data){
 function pop_request(){
 	request_users_list.pop()
 	request_video_list.pop()
+}
+
+async function resolve_music_requests(){
+	while(true){
+		if (isReq && !ytm.isPlaying()){
+			if (request_video_list.length>0){
+				ytm.change_volume(0.2)
+				spoty.pause()
+				currently_playing = request_video_list[0]
+				pop_request()
+				console.log(`Playing ${currently_playing['Title']}`)
+				await ytm.play(currently_playing['id'])
+				currently_playing = 'null'
+			}
+			else{
+				spoty.resume()
+				await sleep(1000)
+				currently_playing = await spoty.currently_playing()
+			}
+		}
+		await sleep(1000)
+	}
 }
 
 function reply(channel, userstate, client, message){
@@ -137,21 +149,6 @@ function commandHandler(channel,userstate,command,client){
 		case 'help':
 			reply(channel,userstate,client,set_Elv('пока никакая помощь не предусмотрена'));
 			break;
-			/*
-		case 'request':
-		case 'r':
-			if (splitted_command.length==1) 
-				reply(channel,userstate,client,set_Elv('Можно заказать карту osu! если есть желаение. ') + opt.command_prefix +set_Elv('r/request/ *ссыль на карту*'));
-			else{
-				console.log(splitted_command[1]);
-				if (!(/osu[.]ppy[.]sh[/]beatmapsets[/]/).test(splitted_command[1]))
-					reply(channel,userstate,set_Elv('какая-то это неправильная ссылка'));
-					else{
-						fs.appendFileSync('D:\\Programms\\bot\\requests.txt', userstate.username + ' - ' +splitted_command[1]+'\n');
-						reply(channel,userstate,client,set_Elv('добавлено'));
-					}
-			}
-			break;*/
 		case 'sound':
 		case 's':
 			if (splitted_command.length==1) 
@@ -178,6 +175,7 @@ function commandHandler(channel,userstate,command,client){
                 if (username == 'Wmuga') {
 					isReq = true;
 					client.say(channel,'Включены запросы музыки')
+					spoty.resume()
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
                 break;
@@ -185,18 +183,27 @@ function commandHandler(channel,userstate,command,client){
                 if (username == 'Wmuga') {
 					isReq = false;
 					client.say(channel,'Выключены запросы музыки')
+					request_users_list = []
+					request_video_list = []
+					ytm.stop()
+					spoty.pause()
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
                 break;        
             case 'sr':
                 if (isReq){
-					let data = splitted_command.splice(1).join(" ")
-                	add_request(channel,userstate,client,data)
+					if (splitted_command.length==1)
+						reply(channel,userstate,'Можно заказать мцзыку. !sr *название трека*/*ссылка на ютуб*')
+					else{
+						let data = splitted_command.splice(1).join(" ")
+						add_request(channel,userstate,client,data)
+					}
 				}else{
 					reply(channel,userstate,client,'Пока низя')
 				}
                 break;
 			case 'sr-skip':
+				ytm.stop()
 				break;
 			default:
 				reply(channel,userstate,client,'нет такой команды');
@@ -214,8 +221,9 @@ function sleep(ms) {
 module.exports.messageHandler = messageHandler;
 module.exports.getmessage = getmessage;
 
-module.exports.test_new_translation = test_new_translation;
-module.exports.remove_translation = remove_translation;
+module.exports.resolve_music_requests = resolve_music_requests
+module.exports.set_token_updater = spoty.set_token_updater
 
-module.exports.pop_request = pop_request;
-module.exports.request_video_list = request_video_list;
+module.exports.currently_playing = function(){
+	return currently_playing
+}
