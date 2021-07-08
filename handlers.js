@@ -8,6 +8,7 @@ let viewers = [];
 let used_soundboard = false;
 let isElv = false;
 let isReq = false;
+let isAutoplaySpoty = true
 let request_users_list = []
 let request_video_list = []
 let currently_playing = 'null'
@@ -51,7 +52,9 @@ function moderate(channel, userstate, message, client){
 		'bigfollows',
 		'yourfollows',
 		'crazycash',
-		'twitch_viewers'
+		'twitch_viewers',
+		'streamskill',
+		'kutt.it/zqZNce'
 	];
 	
 	let repeatedLetters = ['eе', 'tт', 'yу', 'oо0', 'pp','aа', 'hн', 'kк', 'xх', 'cс', 'bв', 'mм', 'rг'];
@@ -85,7 +88,7 @@ async function add_request(channel,userstate,client,data){
 		reply(channel,userstate,client,'уже есть твой заказ')
 	}else{
 		let videodata
-		if (new RegExp('youtube.com/watch','ig').test(data.split(' ')[0])){
+		if (new RegExp('/watch?v=','ig').test(data.split(' ')[0])){
 			let id = (data.split(' ')[0].split('v=')[1].split('&')[0])
 			videodata = await require('.\\twitch_requests').request('GET',`https://www.googleapis.com/youtube/v3/videos?id=${id}&key=${opt.youtube_api_key}&part=snippet`)
 		}
@@ -114,18 +117,20 @@ async function resolve_music_requests(){
 	while(true){
 		if (isReq && !ytm.isPlaying()){
 			if (request_video_list.length>0){
-				ytm.change_volume(0.2)
+				ytm.change_volume(0.4)
 				spoty.pause()
 				currently_playing = request_video_list[0]
 				pop_request()
-				console.log(`Playing ${currently_playing['Title']}`)
 				await ytm.play(currently_playing['id'])
 				currently_playing = 'null'
 			}
 			else{
-				spoty.resume()
-				await sleep(1000)
-				currently_playing = await spoty.currently_playing()
+				if (isAutoplaySpoty)
+				{
+					spoty.resume()
+					await sleep(1000)
+					currently_playing = await spoty.currently_playing()
+				}
 			}
 		}
 		await sleep(1000)
@@ -179,6 +184,7 @@ function commandHandler(channel,userstate,command,client){
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
                 break;
+			case 'sr-stop':
             case 'sr-close':
                 if (username == 'Wmuga') {
 					isReq = false;
@@ -189,11 +195,14 @@ function commandHandler(channel,userstate,command,client){
 					spoty.pause()
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
-                break;        
+                break;    
+			case 'sr-spoty':
+				isAutoplaySpoty = !isAutoplaySpoty
+				break;
             case 'sr':
                 if (isReq){
 					if (splitted_command.length==1)
-						reply(channel,userstate,'Можно заказать мцзыку. !sr *название трека*/*ссылка на ютуб*')
+						reply(channel,userstate,'Можно заказать музыку. !sr *название трека*/*ссылка на ютуб*')
 					else{
 						let data = splitted_command.splice(1).join(" ")
 						add_request(channel,userstate,client,data)
@@ -205,6 +214,13 @@ function commandHandler(channel,userstate,command,client){
 			case 'sr-skip':
 				ytm.stop()
 				break;
+			case 'sr-volume':
+				if (username == 'Wmuga') {
+					if (splitted_command.length>1)
+						ytm.change_volume(parseFloat(splitted_command[1]))
+				}
+				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
+				break;	
 			default:
 				reply(channel,userstate,client,'нет такой команды');
 				break;

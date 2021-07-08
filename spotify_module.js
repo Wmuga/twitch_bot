@@ -125,6 +125,7 @@ async function currently_playing(){
     let data = await request('GET', 'https://api.spotify.com/v1/me/player',await get_bearer_header())
     if (!data) return 'null'
     data = JSON.parse(data) 
+    if (!data['item']) return 'null'
     let artists = ''
     data['item']['artists'].forEach(artist => {
         artists += artist['name']+ ' '
