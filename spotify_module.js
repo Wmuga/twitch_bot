@@ -110,12 +110,15 @@ function get_token(){
     get_simple_header())
 }
 
-async function set_token_updater(){
+async function set_token_updater(cancellation){
     authorize()
     while(!app_code) await new Promise(resolve => setTimeout(resolve,1000))
     access_token_data = await get_token()
     let refresh_token = access_token_data['refresh_token']
-    while(true){
+    app_code = ''
+    let cont = true
+    while(cont){
+        if (cancellation) cancellation.on('cancel',()=>{cont = false}) 
         access_token_data = await refresh_access_token(access_token_data['expires_in'],refresh_token)
     }
 }

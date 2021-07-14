@@ -13,6 +13,7 @@ let xhr = new XMLHttpRequest();
 xhr.open('GET','https://badges.twitch.tv/v1/badges/global/display',false);
 xhr.send();
 let badges = JSON.parse(xhr.responseText)['badge_sets'];
+let song_overlay = document.getElementsByClassName('song-overlay')[0]
 
 function parse_emote_data(data){
     let parsed_data = JSON.parse('{}');
@@ -57,36 +58,12 @@ function add_new_message(userstate,message){
     document.getElementsByClassName('chat')[0].appendChild(new_msg);
 }
 
-function check_for_commands(username,message){
-    if(message[0]=='!'){
-        message = message.substring(1)
-        let splitted_message = message.split(' ')
-        switch (splitted_message[0]){
-            case 'sr-start':
-                if (username == 'Wmuga') {
-                    let song_overlay = document.getElementsByClassName('song-overlay')[0]
-                    song_overlay.hidden = false
-                }
-                break;
-            case 'sr-close':
-                if (username == 'Wmuga') {
-                    let song_overlay = document.getElementsByClassName('song-overlay')[0]
-                    song_overlay.hidden = true
-                }
-                break;    
-            default:
-                break;        
-        }
-    }
-}
-
 const client = new tmi.client(options);
 
 console.log('Connecting')
 
 client.on('message',(channel,userstate,message) =>{
-    add_new_message(userstate,message);
-    check_for_commands(userstate['display-name'],message);
+    add_new_message(userstate,message);     
 });
 
 client.on('connected',() =>{
@@ -142,49 +119,39 @@ function set_raid_event(name){
 }
 
 async function resolve_events(){
-    while(true){
-        if (event_array.length>0){
-            let event = event_array.pop();
-            switch (event.event){
-                default:
-                    break;
-                case ('follow'):
-                    await set_follow_event(event.name);
-                    break;   
-                case ('raid'):
-                    await set_raid_event(event.name);
-                    break;
-            }
+    if (event_array.length>0){
+        let event = event_array.pop();
+        switch (event.event){
+            default:
+                break;
+            case ('follow'):
+                await set_follow_event(event.name);
+                break;   
+            case ('raid'):
+                await set_raid_event(event.name);
+                break;
         }
-        await new Promise(resolve => setTimeout(resolve,500));
-    }
+     }
 }
 
 async function check_events(){
-    while(true){
-        let follow = get_new_follow(164555591);
-        if (follow!='') add_new_event('follow',follow);
-        await new Promise(resolve => setTimeout(resolve,3000));
-    }
+    let follow = get_new_follow(164555591);
+    if (follow!='') add_new_event('follow',follow);
 }
 
 async function check_music() {
-    while (true)
-    {
-        let data = request('GET','http://localhost:6556/requests')
-        if (data && data !='\"null\"'){
-            data = JSON.parse(data)
-            document.getElementsByClassName('artist')[0].innerHTML = data['Channel']
-            document.getElementsByClassName('song-name')[0].innerHTML = data['Title']
-        }else{
-            document.getElementsByClassName('artist')[0].innerHTML = 'Artist'
-            document.getElementsByClassName('song-name')[0].innerHTML = 'Title'
-        }
-        await new Promise(resolve => setTimeout(resolve,1000));
+    let data = request('GET','http://localhost:6556/requests')
+    if (data && data !='\"null\"'){
+        data = JSON.parse(data)
+        song_overlay.hidden = false
+        document.getElementsByClassName('artist')[0].innerHTML = data['Channel']
+        document.getElementsByClassName('song-name')[0].innerHTML = data['Title']
+    }else{
+        document.getElementsByClassName('artist')[0].innerHTML = 'Artist'
+        document.getElementsByClassName('song-name')[0].innerHTML = 'Title'
+        song_overlay.hidden = true
     }
-    
 }
-
-check_events();
-resolve_events();
-check_music();
+setInterval(check_music,1000)
+setInterval(resolve_events,500)
+setInterval(check_events,3000)

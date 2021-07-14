@@ -3,6 +3,7 @@ const Audio = require("sound-play")
 const soundboard = require('.\\sounds.json');
 const ytm = require('.\\youtube_music.js');
 const spoty = require('.\\spotify_module.js')
+const Emmiter = require('events')
 
 let viewers = [];
 let used_soundboard = false;
@@ -12,6 +13,7 @@ let isAutoplaySpoty = true
 let request_users_list = []
 let request_video_list = []
 let currently_playing = 'null'
+let cancellation = new Emmiter()
 
 const getmessage = (channel,userstate,message) => ("["+channel+"]:"+userstate['username']+"-"+message);
 
@@ -141,7 +143,7 @@ function reply(channel, userstate, client, message){
 	client.say(channel,'@' + userstate.username+' '+ message);
 }
 
-function commandHandler(channel,userstate,command,client){
+async function commandHandler(channel,userstate,command,client){
 	let splitted_command = command.toLowerCase().split(' ').filter(part => part.length>0);
 	let username = userstate['display-name']
 	if (splitted_command[0][0]>'z') {
@@ -180,6 +182,7 @@ function commandHandler(channel,userstate,command,client){
                 if (username == 'Wmuga') {
 					isReq = true;
 					client.say(channel,'Включены запросы музыки')
+					spoty.set_token_updater(cancellation)
 					spoty.resume()
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
@@ -193,6 +196,8 @@ function commandHandler(channel,userstate,command,client){
 					request_video_list = []
 					ytm.stop()
 					spoty.pause()
+					currently_playing = 'null'
+					cancellation.emit('cancel')
 				}
 				else reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
                 break;    
@@ -238,7 +243,6 @@ module.exports.messageHandler = messageHandler;
 module.exports.getmessage = getmessage;
 
 module.exports.resolve_music_requests = resolve_music_requests
-module.exports.set_token_updater = spoty.set_token_updater
 
 module.exports.currently_playing = function(){
 	return currently_playing

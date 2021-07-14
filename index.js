@@ -36,7 +36,6 @@ const client = new tmi.Client(options_bot);
 
 client.connect();
 
-eventHandler.set_token_updater()
 
 client.on('connected',(address,port) =>{
 	console.log("Successfully connected client");
