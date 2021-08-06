@@ -22,7 +22,7 @@ function request(_method,_url,_headers){
 
 let app_code
 let access_token_data
-
+let refresh_token
 
 
 function requestJson(_method,_url,_headers){
@@ -67,6 +67,7 @@ function authorize(){
                 break;
         }
         if (app_code) {
+            console.log('Got app code')
             http_server.close()
         }
     })
@@ -100,6 +101,7 @@ function get_bearer_header(){
 function refresh_access_token(expires_in,refresh_token){
     return new Promise(async function(resolve){
         await new Promise(r => setTimeout(r,expires_in*1000))
+        console.log('Refresh token')
         resolve(await requestJson('POST',`https://accounts.spotify.com/api/token?grant_type=refresh_token&refresh_token=${refresh_token}`,
         get_simple_header()))
     })
@@ -113,12 +115,16 @@ function get_token(){
 async function set_token_updater(cancellation){
     authorize()
     while(!app_code) await new Promise(resolve => setTimeout(resolve,1000))
+    console.log('Got token')
     access_token_data = await get_token()
-    let refresh_token = access_token_data['refresh_token']
+    refresh_token = access_token_data['refresh_token']
     app_code = ''
     let cont = true
     while(cont){
-        if (cancellation) cancellation.on('cancel',()=>{cont = false}) 
+        if (cancellation) cancellation.on('cancel',()=>{
+            console.log('Cancelled')
+            cont = false
+        }) 
         access_token_data = await refresh_access_token(access_token_data['expires_in'],refresh_token)
     }
 }
@@ -128,7 +134,7 @@ async function currently_playing(){
     let data = await request('GET', 'https://api.spotify.com/v1/me/player',await get_bearer_header())
     if (!data) return 'null'
     data = JSON.parse(data) 
-    if (!data['item']) return 'null'
+    if (!data['item'] || JSON.parse(!data['is_playing'])) return 'null'
     let artists = ''
     data['item']['artists'].forEach(artist => {
         artists += artist['name']+ ' '
@@ -136,7 +142,8 @@ async function currently_playing(){
     artists = artists.slice(0,-1)
     return{
         'Title':data['item']['name'],
-        'Channel':artists
+        'Channel':artists,
+        'img':data['item']['album']['images'].length>0 ? data['item']['album']['images'][(data['item']['album']['images']).length-2]['url'] :'null'
     }
 }
 
@@ -144,7 +151,7 @@ async function is_playing(){
     let data = await request('GET', 'https://api.spotify.com/v1/me/player',await get_bearer_header())
     if (!data) return false
     data = JSON.parse(data) 
-    return bool(data['is_playing'])
+    return JSON.parse(data['is_playing'])
 }
 
 async function resume(){
@@ -155,10 +162,13 @@ async function pause(){
     request('PUT', `https://api.spotify.com/v1/me/player/pause?device_id=${opt.device_id}`,await get_bearer_header())
 }
 
+async function skip(){
+    request('POST', `https://api.spotify.com/v1/me/player/next?device_id=${opt.device_id}`,await get_bearer_header())
+}
+
 module.exports.set_token_updater = set_token_updater
 module.exports.currently_playing = currently_playing
 module.exports.resume = resume
 module.exports.pause = pause
-module.exports.is_playing = function(){
-    return is_playing()
-}
+module.exports.is_playing = is_playing
+module.exports.skip = skip
