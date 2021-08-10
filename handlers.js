@@ -104,8 +104,8 @@ async function add_request(channel,userstate,client,data){
 }
 
 function pop_request(){
-	request_users_list.pop()
-	request_video_list.pop()
+	request_users_list.shift()
+	request_video_list.shift()
 }
 
 async function resolve_music_requests(){
