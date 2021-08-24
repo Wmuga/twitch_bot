@@ -4,7 +4,7 @@ const soundboard = require('.\\sounds.json');
 const ytm = require('.\\youtube_music.js');
 const spoty = require('.\\spotify_module.js')
 const io = require('socket.io-client')
-const sqltie = require('better-sqlite3')
+const sqlite = require('better-sqlite3')
 const uf = require('.\\usefull_functions.js')
 
 let viewers = []
@@ -17,7 +17,7 @@ let request_users_list = []
 let request_video_list = []
 let currently_playing = 'null'
 let socket = io('http://192.168.1.3:3001', { transports : ['websocket'] })
-let db = new sqltie(`${__dirname}\\viewers.db`)
+let db = new sqlite(`${__dirname}\\viewers.db`)
 
 socket.on('connect',()=>{
 	socket.emit('twitchBot')
@@ -82,7 +82,7 @@ async function add_request(channel,userstate,client,data){
 		uf.reply(channel,userstate,client,'уже есть твой заказ')
 	}else{
 		let videodata
-		if (new RegExp('/watch?v=','ig').test(data.split(' ')[0])){
+		if (new RegExp('v=','ig').test(data.split(' ')[0])){
 			let id = (data.split(' ')[0].split('v=')[1].split('&')[0])
 			videodata = await require('.\\twitch_requests').request('GET',`https://www.googleapis.com/youtube/v3/videos?id=${id}&key=${opt.youtube_api_key}&part=snippet`)
 		}
@@ -148,7 +148,7 @@ async function commandHandler(channel,userstate,command,client){
 	switch(splitted_command[0])
 	{
 		case 'help':
-			uf.reply(channel,userstate,client,set_Elv('пока никакая помощь не предусмотрена'));
+			uf.reply(channel,userstate,client,set_Elv('Хелпа с командами в доках: ')+ 'https://docs.google.com/spreadsheets/d/1jwL1IHtfxQZlZf__QWsfCIYeDOebPZTViDim7wORgq4/edit?usp=sharing');
 			break;
 		case 'sound':
 		case 's':
@@ -182,6 +182,7 @@ async function commandHandler(channel,userstate,command,client){
                 break;
 		case 'sr-stop':
         case 'sr-close':
+		case 'sr-end':	
             if (username == 'Wmuga') {
 				isReq = false;
 				client.say(channel,'Выключены запросы музыки')
@@ -229,7 +230,7 @@ async function commandHandler(channel,userstate,command,client){
 			}else uf.reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
 			break;
 		case 'sr-volume':
-			if (username == 'Wmuga') {
+			if (username == 'Wmuga' || userstate['mod']) {
 				if (splitted_command.length>1)
 					ytm.change_volume(parseFloat(splitted_command[1]))
 			}
@@ -249,7 +250,7 @@ async function commandHandler(channel,userstate,command,client){
 			break
 		case 'points':
 			if (splitted_command.length==1 || splitted_command[1]!='top')
-				uf.reply(channel,userstate,client,set_Elv(`У тебя ${get_points_viewer(userstate['username'])}`))
+				uf.reply(channel,userstate,client,set_Elv(`У тебя ${get_points_viewer(userstate['username'])} поинтов`))
 			else{
 				if (splitted_command[1]=='top') client.say(channel,`Текущий топ по поинтам: ${get_points_top5()}`)
 			}	
@@ -261,6 +262,10 @@ async function commandHandler(channel,userstate,command,client){
 			else{
 				let points = Number(splitted_command[1]) ? Number(splitted_command[1]) : 5
 				let chance = (splitted_command.length>2 && Number(splitted_command[2])) ? Number(splitted_command[2]) : 2
+				if (points<1 || chance<1) {
+					uf.reply(channel,userstate,client,set_Elv('Неее. Это так не работает'))
+					return
+				}
 				if (get_points_viewer(userstate['username'])>=points) roll_viewer(client,channel,userstate['display-name'],points,chance)
 				else uf.reply(channel,userstate,client,set_Elv('Не хватает поинтов'))
 			}
@@ -293,9 +298,9 @@ function get_points_all(){
 }
 
 function get_points_top5(){
-	let rows = db.prepare('select * from points order by count desc limit 6').all()
+	let rows = db.prepare('select * from points order by count desc where nickname<>wmuga limit 5').all()
 	rows = rows.map(row => `${row.nickname} = ${row.count}`)
-	return rows.splice(1).join(', ')
+	return rows.join(', ')
 }
 
 function set_points_viewer(nickname,count){
@@ -322,7 +327,7 @@ function roll_viewer(client,channel,username,points,chance){
 		add_points_viewer(username.toLowerCase(),points*(chance-1))
 	}
 	else{
-		client.say(channel,`@${username} несмог выиграть в руллетке 1к${chance} и теряет ${points} поинтов`)
+		client.say(channel,`@${username} не смог выиграть в руллетке 1к${chance} и теряет ${points} поинтов`)
 		add_points_viewer(username.toLowerCase(),-points)
 	}
 }
