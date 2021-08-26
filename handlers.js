@@ -195,15 +195,6 @@ async function commandHandler(channel,userstate,command,client){
 			}
 			else uf.reply(channel,userstate,client,set_Elv('Не трожь кнопку'))
             break;    
-		case 'sr-spoty':
-			isAutoplaySpoty = !isAutoplaySpoty
-			if (!isAutoplaySpoty) {
-				spoty.pause()
-				socket.emit('song','null')
-			}
-			else 
-				spoty.resume()
-			break;
         case 'sr':
 			if (splitted_command.length==1)
 				uf.reply(channel,userstate,client,'Можно заказать музыку. !sr *название трека*/*ссылка на ютуб*')
