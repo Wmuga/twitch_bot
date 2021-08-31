@@ -1,6 +1,7 @@
 {
-    "enc_oauth": "ENCODED OAUTH (i don't know why i enctypted it 4 myself u can just put normal oauth and change bot_options)",
-    "command_prefix": "!",
+    "bot_name":"Twitch nickname of bot",
+    "oauth": "bot's oauth",
+    "channel":"moderated channel",
     "youtube_api_key": "YOUTUBE API KEY from google",
     "spotify_client_id": "guess what that is",
     "spotify_client_secret": "",

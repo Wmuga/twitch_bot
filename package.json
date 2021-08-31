@@ -1,27 +1,18 @@
 {
-  "name": "bot2",
-  "version": "1.0.0",
+  "name": "bot",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
+  "dependencies": {
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6",
+    "sound-play": "^1.1.0",
+    "tmi.js": "^1.8.5"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "better-sqlite3": "^7.4.3",
-    "lame": "github:suldashi/node-lame",
-    "node-gyp": "^8.1.0",
-    "opn": "^6.0.0",
-    "pcm-volume": "^1.0.0",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
-    "socket.io": "^4.1.3",
-    "socket.io-client": "^4.1.3",
-    "sound-play": "^1.1.0",
-    "speaker": "^0.5.3",
-    "tmi.js": "^1.8.3",
-    "which": "^2.0.2",
-    "ytdl-core": "^4.8.3"
-  }
+  "author": "Wmuga",
+  "license": "ISC"
 }
