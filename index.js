@@ -27,7 +27,7 @@ class Bot{
             },
             identity: {
                 username: opt.bot_name,
-                password: opt.password,
+                password: opt.oauth,
             },
             channels: [opt.channel],
         })
@@ -36,9 +36,10 @@ class Bot{
             console.log("Successfully connected client");
         })
 
-        this.client.on('join',(channel,username)=>current_viewers.push(username))
-	    this.client.on('part',(channel,username)=>current_viewers = uf.removeByValue(current_viewers,username))
+        this.client.on('join',(channel,username)=>this.current_viewers.push(username))
+	    this.client.on('part',(channel,username)=>this.current_viewers = uf.removeByValue(current_viewers,username))
         this.client.addListener('message',this.message_handler)
+        this.client.connect()
 
         this.spoty = new SpotifyMusic(opt.spotify_client_id,opt.spotify_client_secret,opt.device_id)
         this.spoty.set_token_updater()
@@ -53,7 +54,7 @@ class Bot{
             output:process.stdout
         });
 
-        coninput.on('line', (input) =>{
+        this.coninput.on('line', (input) =>{
             let response = concomands.handler(input);
             console.log(response);
             if (response){
@@ -85,25 +86,31 @@ class Bot{
                 }
             }
         })
-
+        
+        let is_ready = this.spoty.is_ready
         setInterval(()=>{
-            if (!this.ytm.is_playing && this.is_autoplay_spoty && !this.spoty.is_playing()) this.spoty.play()
-            this.socket.emit('song', (this.ytm.is_playing() ? this.ytm.currently_playing() : this.spoty.currently_playing())??'null')
-            this.db.update_viewers(this.current_viewers)
-            if(!this.set_timer){
-                set_timer = true
-                setTimeout(()=>{
-                    set_timer = false
-                    if (this.passed_messages>4){
-                        this.current_timer=((this.current_timer??0) +1)%opt.timer_messages.length;
-                        this.passed_messages = 0
-                        this.say(timer_messages[this.current_timer])
-                    }
-                })
+            if (is_ready()){
+                if (!this.ytm.is_playing && this.is_autoplay_spoty && !this.spoty.is_playing()) this.spoty.play()
+                
+                this.socket.emit('song', (this.ytm.is_playing() ? this.ytm.currently_playing() : this.spoty.currently_playing())??'null')
+                
+                this.db.update_viewers(this.current_viewers)
+                
+                if(!this.set_timer){
+                    this.set_timer = true
+                    setTimeout(()=>{
+                        this.set_timer = false
+                        if (this.passed_messages>4){
+                            this.current_timer=((this.current_timer??0) +1)%opt.timer_messages.length;
+                            this.passed_messages = 0
+                            this.say(timer_messages[this.current_timer])
+                        }
+                    })
+                }
             }
         },1000)
-
     }
+
     say(message) {
         this.client.say(opt.channel,this.isElv ? uf.switch_layout(message) : message)
         this.isElv = false
@@ -289,3 +296,5 @@ class Bot{
         }
     }
 }
+
+let bot = new Bot()

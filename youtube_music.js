@@ -49,7 +49,7 @@ class YoutubeMusic{
         bitDepth: 16,
         sampleRate:44100
     })
-    set_up_stream(id)
+    this.set_up_stream(id)
     this.ffmpeg
     .pipe(decoder())
     .pipe(this.v)
@@ -70,7 +70,7 @@ class YoutubeMusic{
     this.v.setVolume(Number(volume_lvl)?? this.options.standart_volume)
   }
 
-  isPlaying(){
+  is_playing(){
     return this._isPlaying
   }
 
@@ -119,11 +119,11 @@ class YoutubeMusic{
 
   setup_resolve_requests(cancellation){
     let interval = setInterval(()=>{
-      if(!this.isPlaying && this.queue.length>0){
+      if(!this.is_playing && this.queue.length>0){
         this.play(this.queue[0].id)
       }
     },1000)
-    cancellation.on('cancel',()=>clearInterval(interval))
+    cancellation?.on('cancel',()=>clearInterval(interval))
   }
 
   clear_queue(){

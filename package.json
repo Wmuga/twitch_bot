@@ -4,10 +4,18 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "better-sqlite3": "^7.4.3",
+    "fluent-ffmpeg": "^2.1.2",
+    "lame": "github:suldashi/node-lame",
+    "opn": "^6.0.0",
+    "pcm-volume": "^1.0.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
+    "socket.io-client": "^4.2.0",
     "sound-play": "^1.1.0",
-    "tmi.js": "^1.8.5"
+    "speaker": "^0.5.3",
+    "tmi.js": "^1.8.5",
+    "ytdl-core": "^4.9.1"
   },
   "devDependencies": {},
   "scripts": {
