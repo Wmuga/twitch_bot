@@ -5,6 +5,7 @@ const Speaker = require('speaker')
 const volume = require('pcm-volume')
 const req = require('request')
 
+
 class YoutubeMusic{
   constructor(options){
     this.options = {
@@ -19,7 +20,7 @@ class YoutubeMusic{
     this.queue = []
     this._isPlaying = false
     this.v = new volume()
-    this.v.setVolume(options.standart_volume)
+    this.change_volume(this.options.standart_volume)
   }
 
   set_up_stream(id){ 
@@ -74,41 +75,42 @@ class YoutubeMusic{
     return this._isPlaying
   }
 
-  add_to_queue(username,user_mod,search_data){
+  async add_to_queue(username,user_mod,search_data){
     let req_count = this.count_requests(username)
     if (user_mod==0 && req_count>this.options.restrictions.User || user_mod==1 && req_count>this.options.restrictions.Mod)
-      return "Превышен лимит запросов"
+      return ["Превышен лимит запросов",false]
     let videodata  
     if (new RegExp('watch/\?v=','ig').test(search_data.split(' ')[0])){
       let id = (search_data.split(' ')[0].split('v=')[1].split('&')[0])
-      videodata = get_data(id,this.options.api_key)
+      videodata = await get_data(id,this.options.api_key)
     }
     else{
-      if (new RegExp('tu\.be','ig').test(data.split(' ')[0])){
-        let id = (data.split(' ')[0].split('be/').pop())
-        videodata = get_data(id,this.options.api_key)
+      if (new RegExp('tu\.be','ig').test(search_data.split(' ')[0])){
+        let id = (search_data.split(' ')[0].split('be/').pop())
+        videodata = await get_data(id,this.options.api_key)
       }
       else{
-        videodata = search(search_data,this.options.api_key)
+        videodata = await search(search_data,this.options.api_key)
       }
     }
-    if (!videodata) return 'Не найдено видео по данному запросу'
+    if (!videodata) return ['Не найдено видео по данному запросу',false]
     let length = 0
-    let str_length = get_length(videodata.id,this.options.api_key)
+    let str_length = await get_length(videodata.id,this.options.api_key)
     length += Number(str_length.split('H')[0])*3600||0
     length += Number(str_length.split('H').pop().split('M')[0])*60||0
     length += Number(str_length.split('H').pop().split('M').pop().split('S')[0])||0
-    if(length>this.options.time_limit) return `Слишком долгое видео`
-    this.queue.push({username:{
+    if(length>this.options.time_limit) return [`Слишком долгое видео`,false]
+    this.queue.push({
       ...videodata,
+      username:username,
       "length":length,
-    }})
-    return `${videodata.Channel} - ${videodata.Title} добавлен в очередь. #${this.queue.length} в очереди`
+    })
+    return [`${videodata.Channel} - ${videodata.Title} добавлен в очередь. #${this.queue.length} в очереди`,true]
   }
   count_requests(name){
     let count = 0
     for (let data of this.queue){
-      if (name in data) count++
+      if (name == data.username) count++
     }
     return count
   }
@@ -117,9 +119,10 @@ class YoutubeMusic{
     return this.queue.length>0?this.queue[0]:null
   }
 
-  setup_resolve_requests(cancellation){
+  async setup_resolve_requests(cancellation){
     let interval = setInterval(()=>{
-      if(!this.is_playing && this.queue.length>0){
+      if(!this.is_playing() && this.queue.length>0){
+        console.log(this.queue[0])
         this.play(this.queue[0].id)
       }
     },1000)
@@ -152,7 +155,7 @@ async function search(data,api_key){
 
 async function get_length(id,api_key){
   let videodata = await request('GET',encodeURI(`https://www.googleapis.com/youtube/v3/videos?id=${id}&part=contentDetails&key=${api_key}`))
-  return videodata['items'][0]['duration'].substring(2)
+  return videodata['items'][0]['contentDetails']['duration'].substring(2)
 }
 
 function request(_method,_url,_headers){

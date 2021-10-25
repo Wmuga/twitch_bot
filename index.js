@@ -38,13 +38,13 @@ class Bot{
 
         this.client.on('join',(channel,username)=>this.current_viewers.push(username))
 	    this.client.on('part',(channel,username)=>this.current_viewers = uf.removeByValue(current_viewers,username))
-        this.client.addListener('message',this.message_handler)
+        this.client.addListener('message',(channel,userstate,message,self)=>this.message_handler(userstate,message,self))
         this.client.connect()
 
         this.spoty = new SpotifyMusic(opt.spotify_client_id,opt.spotify_client_secret,opt.device_id)
         this.spoty.set_token_updater()
 
-        this.ytm = new YoutubeMusic({"api_key":opt.api_key})
+        this.ytm = new YoutubeMusic({"api_key":opt.youtube_api_key})
         this.ytm.setup_resolve_requests()
 
         this.db = new ViewersDB() 
@@ -87,14 +87,13 @@ class Bot{
             }
         })
         
-        let is_ready = this.spoty.is_ready
-        setInterval(()=>{
-            if (is_ready()){
-                if (!this.ytm.is_playing && this.is_autoplay_spoty && !this.spoty.is_playing()) this.spoty.play()
+        setInterval(async ()=>{
+            if (this.spoty.is_ready()){
+                if (!this.ytm.is_playing() && this.is_autoplay_spoty && ! await this.spoty.is_playing()) this.spoty.resume()
+                if (this.ytm.is_playing() && this.spoty.is_playing()) this.spoty.pause()
                 
                 this.socket.emit('song', (this.ytm.is_playing() ? this.ytm.currently_playing() : this.spoty.currently_playing())??'null')
                 
-                this.db.update_viewers(this.current_viewers)
                 
                 if(!this.set_timer){
                     this.set_timer = true
@@ -105,10 +104,14 @@ class Bot{
                             this.passed_messages = 0
                             this.say(timer_messages[this.current_timer])
                         }
-                    })
+                    },6*60*1000)
                 }
             }
         },1000)
+		
+		setInterval(()=>{
+			this.db.update_viewers(this.current_viewers)
+		},60*1000)
     }
 
     say(message) {
@@ -149,19 +152,19 @@ class Bot{
         }
     }
 
-    message_handler(channel, userstate, message, self)
+    message_handler(userstate, message, self)
     {	
         if (!self){
             if (this.moderate(userstate['username'], message)){
                 this.test_for_new_viewer(userstate['username']);
                 if (message[0]=='!') 
-                    this.command_handler(userstate,message);
+                    this.command_handler(userstate,message.slice(1));
                 }
         }
     }
 
     check_rights(userstate,owner_only){
-        return (!owner_only && userstate["mod"]) || userstate['username'] == opt.channel.substring(1)
+        return (!owner_only && userstate["mod"]) || userstate['username'] == opt.channel
     }
 
     async command_handler(userstate,command){
@@ -211,7 +214,7 @@ class Bot{
             case 'sr-close':
 		    case 'sr-end':	
                 if (this.check_rights(userstate,true)) {
-		    		isReq = false;
+		    		this.isReq = false;
 		    		this.say('Выключены запросы музыки')
 		    		this.ytm.stop()
                     this.ytm.clear_queue()
@@ -225,10 +228,12 @@ class Bot{
 		    	if (splitted_command.length==1)
 		    		this.reply(username,'Можно заказать музыку. !sr *название трека* / *ссылка на ютуб*')
 		    	else{
-		    		if (isReq || this.check_rights(userstate,true)){
+		    		if (this.isReq || this.check_rights(userstate,true)){
 		    			let data = splitted_command.splice(1).join(" ")
                         if (this.check_rights(userstate,true) || this.db.execute_with_points(username,5)){
-		    			    this.ytm.add_to_queue(username,userstate["mod"]? 1 : this.check_rights(userstate,true) ? 2 : 0, data)
+		    			    let res = await this.ytm.add_to_queue(username,userstate["mod"]? 1 : this.check_rights(userstate,true) ? 2 : 0, data)
+                            this.say(res[0])
+                            if (!res[1]) this.db.add_points_viewer(username,5)
                         } else this.reply(username,`Недостаточно поинтов. Необходимо 5`)
 		    		}else{
 		    			this.reply(username,'Пока нельзя')

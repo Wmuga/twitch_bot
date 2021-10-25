@@ -10,11 +10,11 @@ class SpotifyMusic{
   }
 
   is_ready(){
-    return this.access_token_data? true : false
+    return this?.access_token_data ? true : false
   }
 
   authorize(){
-    this.http_server = http.createServer(this.server_callback)
+    this.http_server = http.createServer((req,res)=>this.server_callback(req,res))
     this.http_server.listen(4100,'localhost',()=>{
         let scopes = 'user-modify-playback-state user-read-playback-state'
         opn(encodeURI(`https://accounts.spotify.com/authorize?client_id=${this.id}&response_type=code&redirect_uri=http://localhost:4100/callback&scope=${scopes}`))
@@ -47,7 +47,7 @@ class SpotifyMusic{
   get_simple_header(){
     return {
         "Content-Type":'application/x-www-form-urlencoded',
-        "Authorization": `Basic ${encode_id_secret()}`
+        "Authorization": `Basic ${this.encode_id_secret()}`
     }
   }
   get_token(){
@@ -64,7 +64,7 @@ class SpotifyMusic{
   async set_token_updater(cancellation){
     this.authorize()
     while(!this.app_code) await new Promise(resolve => setTimeout(resolve,1000))
-    this.access_token_data = await get_token()
+    this.access_token_data = await this.get_token()
     console.log('Got token')
     this.refresh_token = this.access_token_data['refresh_token']
     this.app_code = ''

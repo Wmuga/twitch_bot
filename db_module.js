@@ -22,7 +22,7 @@ class ViewersDB{
   }
 
   set_points_viewer(nickname,count){
-    if (get_points_viewer(nickname)==0){
+    if (this.get_points_viewer(nickname)==0){
       this.db.prepare(`insert into points (nickname, count) values (?, ?)`).run(nickname,count)
     }else{
       this.db.prepare('update points set count = ? where nickname = ?').run(count,nickname)
@@ -30,22 +30,22 @@ class ViewersDB{
   }
 
   add_points_viewer(nickname,count){
-    set_points_viewer(nickname,get_points_viewer(nickname)+count)
+    this.set_points_viewer(nickname,this.get_points_viewer(nickname)+count)
   }
   
   update_viewers(current_viewers){
     current_viewers.forEach((nickname)=>{
-      add_points_viewer(nickname,1)
+      this.add_points_viewer(nickname,1)
     })
   }
 
   roll_viewer(username,points,chance){
     if ( Math.random() < 1/chance ){
-      add_points_viewer(username.toLowerCase(),points*(chance-1))
+      this.add_points_viewer(username.toLowerCase(),points*(chance-1))
       return ` смог выиграть в руллетке 1к${chance} и выиграл ${chance*points} поинтов`
     }
     else{
-      add_points_viewer(username.toLowerCase(),-points)
+      this.add_points_viewer(username.toLowerCase(),-points)
       return ` не смог выиграть в руллетке 1к${chance} и теряет ${points} поинтов`
     }
   }
