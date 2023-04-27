@@ -1,10 +1,9 @@
 bot_options.json
 soundboard/*
 *.bat
-*.mp3
 .idea/*
-crypt.js
-test.js
 **/node_modules/**
 !**/node_modules/lame
 !**/node_modules/lame/**/*
+!**/node_modules/speaker
+!**/node_modules/speaker/**/*

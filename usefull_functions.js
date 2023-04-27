@@ -18,12 +18,6 @@ function removeByValue(arr,filterValue){
     return arr.filter(function(value){return value!=filterValue})
 }
 
-function reply(channel, userstate, client, message){
-	client.say(channel,'@' + userstate.username+' '+ message);
-}
-
-
 module.exports.switch_layout = switch_layout
 module.exports.sleep = sleep
 module.exports.removeByValue = removeByValue
-module.exports.reply = reply
