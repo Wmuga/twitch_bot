@@ -1,6 +1,7 @@
 import tmi,{Client, ChatUserstate} from "tmi.js"
 import { IBot } from "../interfaces/IBot"
 import { BotOptions } from "../Types/BotOptions";
+import { channel } from "diagnostics_channel";
 
 export class Bot implements IBot{
   private client:Client;
@@ -43,9 +44,9 @@ export class Bot implements IBot{
       console.log(`Connected to ${options.channel}`);
     })
 
-    this.client.on('join', this.onUserJoin);
-    this.client.on('part', this.onUserPart);
-    this.client.on('message',this.handleMessage);
+    this.client.on('join', (_,username)=>this.onUserJoin(username));
+    this.client.on('part', (_,username)=>this.onUserPart(username));
+    this.client.addListener('message',(channel,userstate,message,self)=>this.handleMessage(channel,userstate,message,self));
 
     this.client.connect();
   }
@@ -58,11 +59,11 @@ export class Bot implements IBot{
     this.say(`@${username}, ${message}`);
   }
 
-  private onUserJoin(channel:string, username:string){
+  private onUserJoin(username:string){
     this.viewers.add(username);
   }
 
-  private onUserPart(channel:string, username:string){
+  private onUserPart(username:string){
     this.viewers.delete(username);
   }
 
@@ -97,9 +98,9 @@ export class Bot implements IBot{
     {
       console.log(username + " нарвался на бананду за спам");
       this.client.ban(this.joined_channel,username,'спам');
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
 
   private handleMessage(channel:string, userstate: ChatUserstate, message: string, self: boolean):void{
@@ -189,16 +190,22 @@ export class Bot implements IBot{
           return;
         }
         let data = commands[1].split('d');
-        let count = Number(data[0]) | 1;
-        let max = data.length > 1? (Number(data[0]) | 6) : 6;
+        let count = Number(data[0]) || 1;
+        let max = data.length > 1 
+          ? (Number(data[1]) || 6) 
+          : 6;
         let cubes = new Array<Number>(count)
-          .map(e=>Math.floor(Math.random()*max)+1);
+          .fill(0)
+          .map(_=>Math.floor(Math.random()*max)+1);
         this.reply(username,`${cubes.join(' + ')} = ${cubes.reduce((a,b)=>a+b,0)}`)
+        return;
+      default:
+        this.reply(username,'нет такой команды');
         return;
     }
   }
 
   private announce():void{
-
+    return;
   }
 }
