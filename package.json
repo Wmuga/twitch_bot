@@ -1,9 +1,11 @@
 {
   "name": "bot",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/index.ts",
   "dependencies": {
+    "@types/socket.io-client": "^3.0.0",
+    "@types/tmi.js": "^1.8.3",
     "better-sqlite3": "^7.4.3",
     "fluent-ffmpeg": "^2.1.2",
     "lame": "github:suldashi/node-lame",
@@ -17,10 +19,9 @@
     "tmi.js": "^1.8.5",
     "ytdl-core": "^4.9.1"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node index.js"
+    "start": "ts-node ./src/index.ts"
   },
   "author": "Wmuga",
   "license": "ISC"
