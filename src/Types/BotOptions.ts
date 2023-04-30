@@ -11,13 +11,15 @@ export type BotOptions = {
     client_secret:string;
     device_id:string;
   };
-  youtube?:{
-    api_key:string;
-    restrictions?:{
-      user?:number;
-      mod?:number;
-    };
-    time_limit?:number;
-    standart_volume?:number;
-  }
+  youtube?:YoutubeOptions;
+}
+
+export type YoutubeOptions = {
+  api_key:string;
+  restrictions?:{
+    user?:number;
+    mod?:number;
+  };
+  time_limit?:number;
+  standart_volume?:number;
 }

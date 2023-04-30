@@ -1,6 +1,8 @@
 export type MusicInfo = {
-  album:string | undefined;
-  artist:string | undefined;
-  track:string | undefined;
-  duration: number | undefined;
+  album?:string;
+  artist?:string;
+  track?:string;
+  duration?: number;
+  username?:string;
+  id:string;
 }

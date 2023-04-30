@@ -4,7 +4,9 @@
   "description": "",
   "main": "./src/index.ts",
   "dependencies": {
+    "@types/fluent-ffmpeg": "^2.1.21",
     "@types/node": "^18.16.2",
+    "@types/pcm-volume": "^1.0.0",
     "@types/socket.io-client": "^3.0.0",
     "@types/tmi.js": "^1.8.3",
     "better-sqlite3": "^7.4.3",
@@ -12,18 +14,21 @@
     "lame": "github:suldashi/node-lame",
     "opn": "^6.0.0",
     "pcm-volume": "^1.0.0",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
+    "request": "2.88.2",
+    "request-promise": "^0.0.1",
     "socket.io-client": "^4.2.0",
     "sound-play": "^1.1.0",
-    "speaker": "^0.5.3",
+    "speaker": "^0.5.4",
     "tmi.js": "^1.8.5",
-    "ytdl-core": "^4.9.1"
+    "ytdl-core": "^4.11.4"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node ./src/index.ts"
   },
   "author": "Wmuga",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/request": "^2.48.8"
+  }
 }

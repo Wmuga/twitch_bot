@@ -1,24 +1,27 @@
-import tmi,{Client, ChatUserstate} from "tmi.js"
+import {Client, ChatUserstate} from "tmi.js"
 import { IBot } from "../interfaces/IBot"
 import { BotOptions } from "../Types/BotOptions";
-import { channel } from "diagnostics_channel";
+import { YoutubeMusic } from "./YoutubeModule";
+import { IMusicProvider } from "../interfaces/IMusicProvider";
 
 export class Bot implements IBot{
-  private client:Client;
-  private joined_channel: string
+  private _client:Client;
+  private _joined_channel: string;
   
-  private viewers: Set<string>
-  private viewers_chatted: Set<string>
+  private _viewers: Set<string> = new Set<string>();
+  private _viewers_chatted: Set<string> = new Set<string>();
   
-  private messages_count: number
-  private announces_count: number
-  
-  private enabled_requests:boolean;
+  private _messages_count: number = 0;
+  private _announces_count: number = 0;
+  private _enabled_requests:boolean = false;
 
-  private botRegex:RegExp | undefined;
+  private _botRegex:RegExp | undefined;
+
+  private _currentMusic? : IMusicProvider;
+  private _ytMusic?: YoutubeMusic;
 
   constructor(options:BotOptions){
-    this.client = new Client({
+    this._client = new Client({
       options:{
         debug:false
       },
@@ -31,28 +34,28 @@ export class Bot implements IBot{
       },
       channels: [options.channel]
     });
-    this.joined_channel = options.channel;
 
-    this.viewers = new Set<string>();
-    this.viewers_chatted = new Set<string>();
-    this.messages_count = 0;
-    this.announces_count = 0;
-    this.enabled_requests = false;
+    this._joined_channel = options.channel;
+
     this.setupRegexp();
 
-    this.client.on('connected',()=>{
+    this._client.on('connected',()=>{
       console.log(`Connected to ${options.channel}`);
     })
 
-    this.client.on('join', (_,username)=>this.onUserJoin(username));
-    this.client.on('part', (_,username)=>this.onUserPart(username));
-    this.client.addListener('message',(channel,userstate,message,self)=>this.handleMessage(channel,userstate,message,self));
+    this._client.on('join', (_,username)=>this.onUserJoin(username));
+    this._client.on('part', (_,username)=>this.onUserPart(username));
+    this._client.addListener('message',(channel,userstate,message,self)=>this.handleMessage(channel,userstate,message,self));
 
-    this.client.connect();
+    this._client.connect();
+    if (options.youtube){
+      this._ytMusic = new YoutubeMusic(options.youtube);
+      this._currentMusic = this._ytMusic;
+    }
   }
 
   say(message: string):void{
-    this.client.say(this.joined_channel,message);
+    this._client.say(this._joined_channel,message);
   }
 
   reply(username: string, message: string):void{
@@ -60,16 +63,16 @@ export class Bot implements IBot{
   }
 
   private onUserJoin(username:string){
-    this.viewers.add(username);
+    this._viewers.add(username);
   }
 
   private onUserPart(username:string){
-    this.viewers.delete(username);
+    this._viewers.delete(username);
   }
 
   private isViewerFirstChat(username: string):boolean{
-    if(!this.viewers_chatted.has(username)){
-      this.viewers_chatted.add(username);
+    if(!this._viewers_chatted.has(username)){
+      this._viewers_chatted.add(username);
       return true;
     }
     return false;
@@ -90,14 +93,14 @@ export class Bot implements IBot{
 
     let repeatedLetters = ['eе', 'tт', 'yу', 'oо0', 'pp','aа', 'hн', 'kк', 'xх', 'cс', 'bв', 'mм', 'rг'];
     services = services.map(e => repeatedLetters.reduce((res, letters) => res.replace(new RegExp(`[${letters}]`, 'ig'), `[${letters}]`), e.split('').join('\\s*')));
-    this.botRegex = new RegExp(services.join('|'), 'ig');
+    this._botRegex = new RegExp(services.join('|'), 'ig');
   }
 
   private isBotMessage(username:string, message:string):boolean{
-    if (this.botRegex!.test(message)) 
+    if (this._botRegex!.test(message)) 
     {
-      console.log(username + " нарвался на бананду за спам");
-      this.client.ban(this.joined_channel,username,'спам');
+      console.log(`Пойман долбучий бот ${username}`);
+      this._client.ban(this._joined_channel,username,'спамобот');
       return true;
     }
     return false;
@@ -113,9 +116,9 @@ export class Bot implements IBot{
       this.say(`Приветствую, @${username}`);
     }
 
-    this.messages_count++;
-    if(this.messages_count == 5){
-      this.messages_count = 0;
+    this._messages_count++;
+    if(this._messages_count == 5){
+      this._messages_count = 0;
       this.announce();
     }
 
@@ -123,8 +126,8 @@ export class Bot implements IBot{
       this.handleCommands(userstate,message.toLowerCase().split(' '))
   }
 
-  private haveRights(userstate: ChatUserstate, isOwnerOnly: boolean):boolean{
-    return false;
+  private havePermissions(userstate: ChatUserstate, isOwnerOnly: boolean):boolean{
+    return (!isOwnerOnly && userstate["mod"]) || `#${userstate['username']}` == this._joined_channel;
   }
 
   private handleCommands(userstate: ChatUserstate, commands: string[]):void{
@@ -142,41 +145,53 @@ export class Bot implements IBot{
         return;
       // Модуль музяки
       case 'sr-start':
-        if(!this.haveRights(userstate,true)){
+        if(!this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
-        this.enabled_requests = true;
-        this.say('А реализовывать кто будет?');
+        this._enabled_requests = true;
+        this._ytMusic?.play();
+        this.say('Включены запросы');
         return;
       case 'sr-stop':
       case 'sr-close':
       case 'sr-end':
-        if(!this.haveRights(userstate,true)){
+        if(!this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
-        this.enabled_requests = true;
-        this.say('А реализовывать кто будет?');
+        this._enabled_requests = false;
+        this._ytMusic?.stop();
+        this.say('Выключены запросы');
         return;
       case 'sr':
-        this.say('А реализовывать кто будет?');
+        if(!this._enabled_requests){
+          this.reply(username, 'заказы не включены');
+          return;
+        }
+        if (commands.length == 1){
+          this.reply(username, 'Можно заказать музыку !sr *трек*');
+          return;
+        }
+        this._ytMusic?.add(username, userstate.mod??false, commands.slice(1).join(' ')).then(v=>{
+          this.say(v[1]);
+        });
         return;
       case 'sr-skip':
-        if(!this.haveRights(userstate,false)){
+        if(!this.havePermissions(userstate,false)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
-        this.enabled_requests = true;
-        this.say('А реализовывать кто будет?');
+        this._ytMusic?.skip();
         return;
       case 'sr-volume':
-        if(!this.haveRights(userstate,false)){
+        if(!this.havePermissions(userstate,false)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
-        this.enabled_requests = true;
-        this.say('А реализовывать кто будет?');
+        if (commands.length == 1 || !Number(commands[1])) return;
+
+        this._ytMusic?.changeVolume(Number(commands[1]))
         return;
       // Модуль БД
       case 'points':
