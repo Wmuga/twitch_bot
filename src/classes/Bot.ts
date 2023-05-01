@@ -3,6 +3,8 @@ import { IBot } from "../interfaces/IBot"
 import { BotOptions } from "../Types/BotOptions";
 import { YoutubeMusic } from "./YoutubeModule";
 import { IMusicProvider } from "../interfaces/IMusicProvider";
+import { ConsoleModule } from "./ConsoleModule";
+import { SqliteDatabase } from './SqliteDatabase'
 
 export class Bot implements IBot{
   private _client:Client;
@@ -52,10 +54,20 @@ export class Bot implements IBot{
       this._ytMusic = new YoutubeMusic(options.youtube);
       this._currentMusic = this._ytMusic;
     }
+
+    let con = new ConsoleModule();
   }
 
   say(message: string):void{
     this._client.say(this._joined_channel,message);
+  }
+
+  sayToChannel(channel: string, message: string): void {
+    if (!channel.startsWith('#')) channel = `#${channel}`;
+    this._client.join(channel).then(()=>{
+      this._client.say(channel,message);
+      this._client.part(channel);
+    })
   }
 
   reply(username: string, message: string):void{

@@ -4,7 +4,7 @@ import path from 'path';
 import { DBCommands } from './DBCommands';
 import { DBResultPointsCount, DBResultPointsTop } from '../Types/DBResultTypes';
 
-class SqliteDatabase implements IDatabaseModule{
+export class SqliteDatabase implements IDatabaseModule{
   _db:Database;
 
   constructor(){
