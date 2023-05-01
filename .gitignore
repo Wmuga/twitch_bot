@@ -4,3 +4,5 @@ soundboard/*
 .idea/*
 **/node_modules/**
 build/*
+test.js
+backups/**

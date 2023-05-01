@@ -4,6 +4,7 @@
   "description": "",
   "main": "./src/index.ts",
   "dependencies": {
+    "@types/better-sqlite3": "^7.6.4",
     "@types/fluent-ffmpeg": "^2.1.21",
     "@types/node": "^18.16.2",
     "@types/pcm-volume": "^1.0.0",
