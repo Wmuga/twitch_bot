@@ -1,10 +1,10 @@
-import {Client, ChatUserstate} from "tmi.js"
+import { Client, ChatUserstate } from "tmi.js"
 import { IBot } from "../interfaces/IBot"
 import { BotOptions } from "../Types/BotOptions";
-import { YoutubeMusic } from "./YoutubeModule";
 import { IMusicProvider } from "../interfaces/IMusicProvider";
-import { ConsoleModule } from "./ConsoleModule";
-import { SqliteDatabase } from './SqliteDatabase'
+import { IConsoleModule } from "../interfaces/IConsoleModule";
+import { Container } from "./DIContainer";
+import { IDatabaseModule } from "../interfaces/IDatabaseModule";
 
 export class Bot implements IBot{
   private _client:Client;
@@ -19,8 +19,9 @@ export class Bot implements IBot{
 
   private _botRegex:RegExp | undefined;
 
-  private _currentMusic? : IMusicProvider;
-  private _ytMusic?: YoutubeMusic;
+  private _ytMusic?: IMusicProvider = Container.get('yt');
+  private _dbModule?: IDatabaseModule = Container.get('database');
+  private _console?: IConsoleModule = Container.get('console');
 
   constructor(options:BotOptions){
     this._client = new Client({
@@ -50,12 +51,22 @@ export class Bot implements IBot{
     this._client.addListener('message',(channel,userstate,message,self)=>this.handleMessage(channel,userstate,message,self));
 
     this._client.connect();
-    if (options.youtube){
-      this._ytMusic = new YoutubeMusic(options.youtube);
-      this._currentMusic = this._ytMusic;
-    }
 
-    let con = new ConsoleModule();
+    this._console?.on('send',(channel, message)=>{
+      this.sayToChannel(channel, message);
+    });
+
+    this._console?.on('send-self',(message)=>{
+      this.say(message);
+    });
+
+    this._console?.on('db-get',()=>{
+      console.log('Not implemented');
+    });
+
+    this._console?.on('db-update',()=>{
+      console.log('Not implemented');
+    })
   }
 
   say(message: string):void{
@@ -67,7 +78,7 @@ export class Bot implements IBot{
     this._client.join(channel).then(()=>{
       this._client.say(channel,message);
       this._client.part(channel);
-    })
+    });
   }
 
   reply(username: string, message: string):void{
@@ -185,6 +196,12 @@ export class Bot implements IBot{
           this.reply(username, 'Можно заказать музыку !sr *трек*');
           return;
         }
+
+        if (!(this._dbModule?.tryRemovePoints(username,5)??true)){
+          this.reply(username, 'Недостаточно поинтов. Нужно 5');
+          return;
+        }
+
         this._ytMusic?.add(username, userstate.mod??false, commands.slice(1).join(' ')).then(v=>{
           this.say(v[1]);
         });
@@ -207,6 +224,8 @@ export class Bot implements IBot{
         return;
       // Модуль БД
       case 'points':
+        let points = this._dbModule?.getPointsViewer(username)??0;
+        this.reply(username, `У тебя ${points} поинтов`);
       case 'roulette':
         this.say('А реализовывать кто будет?');
         return;
