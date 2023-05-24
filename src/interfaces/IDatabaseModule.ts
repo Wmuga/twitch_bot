@@ -1,6 +1,7 @@
 export interface IDatabaseModule{
   setPointsViewer(username:string, points:number):void;
   getPointsViewer(username:string):number;
+  getPointsMax20():Record<string, number>;
   getPointsTop5(channel_owner: string):Record<string, number>;
   addPointsViewer(username:string, add:number):void;
   massAddPoints(usernames:Set<string>, add:number):void;

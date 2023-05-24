@@ -1,20 +1,14 @@
-import { IConsoleModule } from "../interfaces/IConsoleModule";
 import readline, {Interface} from 'readline'
 import { SendEventHandler, SendSelfEventHandler, DBUpdateEventHandler, DBGetEventHandler, ResizeEventHandler, ConsoleEventHandler, ConsoleEvent } from "../Types/ConsoleEventHandlers";
+import { MusicInfo } from "../Types/MusicInfo";
+import { AUserInterface } from './AUserInterface';
 
-export class ConsoleModule implements IConsoleModule{
+export class ConsoleModule extends AUserInterface{
   
   private _console: Interface;
-  private _self_channel?: string;
-  private _handlers:Record<ConsoleEvent, ConsoleEventHandler | undefined> = {
-    'send': undefined,
-    'send-self': undefined,
-    'db-update': undefined,
-    'db-get': undefined,
-    'resize': undefined
-  };
 
   constructor(){
+    super();
     this._console = readline.createInterface({
       input:process.stdin,
       output:process.stdout
@@ -41,18 +35,12 @@ export class ConsoleModule implements IConsoleModule{
       }
     })
   }
-
-  on(event:'send',callback:SendEventHandler):void;
-  on(event:'send-self',callback:SendSelfEventHandler):void;
-  on(event:'db-update',callback:DBUpdateEventHandler):void;
-  on(event:'db-get',callback:DBGetEventHandler):void;
-  on(event:'resize',callback:ResizeEventHandler):void;
-  on(event: ConsoleEvent, callback: ConsoleEventHandler): void {
-    this._handlers[event] = callback;
+  
+  sendString(str: string): void {
+    console.log(str);
   }
-
-  setSelfChannel(channel: string): void {
-    this._self_channel = channel;
+  sendMusic(music: MusicInfo): void {
+    console.log(music);
   }
 
   private checkSendCommand(command:Array<string>){
@@ -61,7 +49,7 @@ export class ConsoleModule implements IConsoleModule{
       return;
     }
     let channel = command[1];
-    let message = command.slice(1).join(' ')
+    let message = command.slice(2).join(' ')
     
     if (channel == this._self_channel && this._handlers['send-self']){
       (this._handlers['send-self'] as SendSelfEventHandler)(message);

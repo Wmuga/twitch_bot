@@ -2,7 +2,7 @@ import { Client, ChatUserstate } from "tmi.js"
 import { IBot } from "../interfaces/IBot"
 import { BotOptions } from "../Types/BotOptions";
 import { IMusicProvider } from "../interfaces/IMusicProvider";
-import { IConsoleModule } from "../interfaces/IConsoleModule";
+import { IUserInterface } from "../interfaces/IUserInterface";
 import { Container } from "./DIContainer";
 import { IDatabaseModule } from "../interfaces/IDatabaseModule";
 
@@ -21,7 +21,7 @@ export class Bot implements IBot{
 
   private _ytMusic?: IMusicProvider = Container.get('yt');
   private _dbModule?: IDatabaseModule = Container.get('database');
-  private _console?: IConsoleModule = Container.get('console');
+  private _uis?: Array<IUserInterface> = Container.get('uiar');
 
   constructor(options:BotOptions){
     this._client = new Client({
@@ -52,21 +52,31 @@ export class Bot implements IBot{
 
     this._client.connect();
 
-    this._console?.on('send',(channel, message)=>{
-      this.sayToChannel(channel, message);
-    });
-
-    this._console?.on('send-self',(message)=>{
-      this.say(message);
-    });
-
-    this._console?.on('db-get',()=>{
-      console.log('Not implemented');
-    });
-
-    this._console?.on('db-update',()=>{
-      console.log('Not implemented');
-    })
+    for(let ui of this._uis??[]){
+      ui.on('send',(channel, message)=>{
+        this.sayToChannel(channel, message);
+      });
+  
+      ui.on('send-self',(message)=>{
+        this.say(message);
+      });
+  
+      ui.on('db-get',()=>{
+        var points = this._dbModule?.getPointsMax20();
+        if (!points){
+          ui.sendString('{}');
+          return; 
+        }
+        for(let k in points){
+          ui.sendString(`${k}: ${points[k]}`);
+        }
+      });
+  
+      ui.on('db-update',(username, points)=>{
+        this._dbModule?.setPointsViewer(username, points)
+      })
+    }
+    
   }
 
   say(message: string):void{

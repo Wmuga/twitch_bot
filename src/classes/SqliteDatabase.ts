@@ -72,4 +72,12 @@ export class SqliteDatabase implements IDatabaseModule{
     return false;
   }
 
+  getPointsMax20():Record<string, number>{
+    let points = this._db.prepare(DBCommands.get_points_viewer_max20).all() as DBResultPointsTop;
+    let res: Record<string,number> = {};
+    for(let rec of points){
+      res[rec.nickname] = rec.count;
+    }
+    return res;
+  }
 }
