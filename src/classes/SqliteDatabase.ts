@@ -19,12 +19,14 @@ export class SqliteDatabase implements IDatabaseModule{
   }
 
   getPointsViewer(username: string): number {
+    username = username.toLowerCase();
     let points = this._db.prepare(DBCommands.get_points_viewer)
       .get(username) as DBResultPointsCount
     return points?.count as number ?? -1;
   }
 
   getPointsTop5(channel_owner: string): Record<string, number> {
+    channel_owner = channel_owner.toLowerCase();
     let points = this._db.prepare(DBCommands.get_points_viewer).all(channel_owner) as DBResultPointsTop;
     let res: Record<string,number> = {};
     for(let rec of points){
@@ -34,6 +36,7 @@ export class SqliteDatabase implements IDatabaseModule{
   }
   
   setPointsViewer(username: string, points: number): void {
+    username = username.toLowerCase();
     if(this.getPointsViewer(username)==-1){
       this._db.prepare(DBCommands.insert_points_viewer).run(username, points)
       return;
@@ -42,6 +45,7 @@ export class SqliteDatabase implements IDatabaseModule{
   }
   
   addPointsViewer(username: string, add: number): void {
+    username = username.toLowerCase();
     if(this.getPointsViewer(username)==-1){
       this._db.prepare(DBCommands.insert_points_viewer).run(username, add)
       return;
@@ -54,6 +58,7 @@ export class SqliteDatabase implements IDatabaseModule{
     const add_stmt = this._db.prepare(DBCommands.add_points_viewer);
     const transaction = this._db.transaction((usernames:Set<string>)=>{
       for(let username of usernames){
+        username = username.toLowerCase();
         if (this.getPointsViewer(username)==-1){
           insert_stmt.run(username, add);
           continue;
@@ -65,6 +70,7 @@ export class SqliteDatabase implements IDatabaseModule{
   }
 
   tryRemovePoints(username: string, points: number): boolean {
+    username = username.toLowerCase();
     if(this.getPointsViewer(username)>=points){
       this.addPointsViewer(username,-points);
       return true;

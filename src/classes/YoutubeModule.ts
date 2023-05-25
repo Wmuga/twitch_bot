@@ -2,7 +2,7 @@ import { MusicInfo } from '../Types/MusicInfo';
 import {IMusicProvider} from '../interfaces/IMusicProvider';
 import {YoutubeOptions} from '../Types/BotOptions';
 
-import ytdl from 'ytdl-core';
+import ytdl from 'ytdl-core'; 
 import FFmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
 import {Decoder} from 'lame';
 import Speaker from 'speaker';
@@ -101,7 +101,6 @@ export class YoutubeMusic implements IMusicProvider{
   play():void{
     this._resolve_loop = setInterval(()=>{
       if(this._is_playing || this._queue.length == 0) return;
-      console.log(this._queue[0]);
       this.startPlaying(this._queue[0].id);
     }, 1000)
   }
@@ -138,16 +137,19 @@ export class YoutubeMusic implements IMusicProvider{
     this._video = ytdl(`https://www.youtube.com/watch?v=${id}`, {
       quality: 'highestaudio'
     });
+    
     this._ffmpeg = FFmpeg({source:this._video});
     this._ffmpeg.on('error',error=>{
       if (!error.toString().includes('SIGKILL')) console.log(error);
     });
-    this._ffmpeg.noVideo()
-        .toFormat('mp3')
+   
+    this._ffmpeg
+        .noVideo()
         .withAudioFrequency(44100)
         .pipe(Decoder())
         .pipe(this._volume)
         .pipe(this._speaker)
+    
     return new Promise(resolve=>{
       this._speaker?.on('close',()=>{
         this._ffmpeg?.kill('SIGKILL');

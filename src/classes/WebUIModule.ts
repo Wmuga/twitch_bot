@@ -1,9 +1,7 @@
-import { SendEventHandler, SendSelfEventHandler, DBUpdateEventHandler, DBGetEventHandler, ResizeEventHandler, ConsoleEvent, ConsoleEventHandler } from "../Types/ConsoleEventHandlers";
 import { MusicInfo } from "../Types/MusicInfo";
 import { AUserInterface } from "./AUserInterface";
 
 export class WebUIModule extends AUserInterface{
-
   constructor(){
     super();
   }

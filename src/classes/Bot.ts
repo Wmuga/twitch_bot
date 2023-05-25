@@ -5,6 +5,7 @@ import { IMusicProvider } from "../interfaces/IMusicProvider";
 import { IUserInterface } from "../interfaces/IUserInterface";
 import { Container } from "./DIContainer";
 import { IDatabaseModule } from "../interfaces/IDatabaseModule";
+import { MusicInfo } from "../Types/MusicInfo";
 
 export class Bot implements IBot{
   private _client:Client;
@@ -19,9 +20,14 @@ export class Bot implements IBot{
 
   private _botRegex:RegExp | undefined;
 
+  private _ownMusic?: IMusicProvider;
   private _ytMusic?: IMusicProvider = Container.get('yt');
+  private _lastMusic?: MusicInfo;
+  
   private _dbModule?: IDatabaseModule = Container.get('database');
   private _uis?: Array<IUserInterface> = Container.get('uiar');
+
+  private _sendMus: NodeJS.Timer;
 
   constructor(options:BotOptions){
     this._client = new Client({
@@ -76,6 +82,10 @@ export class Bot implements IBot{
         this._dbModule?.setPointsViewer(username, points)
       })
     }
+
+    this._sendMus = setInterval(()=>{
+      this.checkPlayingMusic();
+    }, 1000)
     
   }
 
@@ -104,6 +114,7 @@ export class Bot implements IBot{
   }
 
   private isViewerFirstChat(username: string):boolean{
+    if (username ==  this._joined_channel) return false;
     if(!this._viewers_chatted.has(username)){
       this._viewers_chatted.add(username);
       return true;
@@ -236,6 +247,7 @@ export class Bot implements IBot{
       case 'points':
         let points = this._dbModule?.getPointsViewer(username)??0;
         this.reply(username, `У тебя ${points} поинтов`);
+        return;
       case 'roulette':
         this.say('А реализовывать кто будет?');
         return;
@@ -262,6 +274,23 @@ export class Bot implements IBot{
   }
 
   private announce():void{
+    // announce messages
     return;
+  }
+
+
+  private checkPlayingMusic(){
+    if (!this._ownMusic?.isPlaying() && !this._ytMusic?.isPlaying()) return;
+
+    let curMusic = this._ytMusic?.isPlaying() ? this._ytMusic : this._ownMusic;
+
+    let cur = curMusic?.current();
+    if (cur == this._lastMusic) return;
+
+    this._lastMusic = cur;
+    
+    for(let ui of this._uis??[]){
+      ui.sendMusic(cur!);
+    }
   }
 }

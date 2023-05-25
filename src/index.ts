@@ -18,7 +18,10 @@ const botOptionsData = JSON.parse(botOptionsFile.toString()) as BotOptions
 if (botOptionsData.youtube){
   Container.addSingleton<IMusicProvider>('yt',new YoutubeMusic(botOptionsData.youtube))
 }
-Container.addSingleton<Array<IUserInterface>>('uiar', [new ConsoleModule(), new WebUIModule()]);
+Container.addSingleton<Array<IUserInterface>>('uiar', [
+  new ConsoleModule(), 
+  //new WebUIModule()
+]);
 Container.addSingleton<IDatabaseModule>('database', new SqliteDatabase());
 
 let bot:IBot = new Bot(botOptionsData)
