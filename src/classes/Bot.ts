@@ -189,6 +189,7 @@ export class Bot implements IBot{
         return;
       // Модуль музяки
       case 'sr-start':
+        if (this._enabled_requests) return;
         if(!this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
@@ -200,6 +201,8 @@ export class Bot implements IBot{
       case 'sr-stop':
       case 'sr-close':
       case 'sr-end':
+        if (!this._enabled_requests) return;
+        
         if(!this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;

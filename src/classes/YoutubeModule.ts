@@ -134,6 +134,9 @@ export class YoutubeMusic implements IMusicProvider{
       bitDepth: 16,
       sampleRate: 44100
     });
+
+    console.log(`https://www.youtube.com/watch?v=${id}`)
+
     this._video = ytdl(`https://www.youtube.com/watch?v=${id}`, {
       quality: 'highestaudio'
     });
@@ -145,6 +148,7 @@ export class YoutubeMusic implements IMusicProvider{
    
     this._ffmpeg
         .noVideo()
+        .toFormat('mp3')
         .withAudioFrequency(44100)
         .pipe(Decoder())
         .pipe(this._volume)
