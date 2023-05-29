@@ -135,7 +135,6 @@ export class YoutubeMusic implements IMusicProvider{
       sampleRate: 44100
     });
 
-    console.log(`https://www.youtube.com/watch?v=${id}`)
 
     this._video = ytdl(`https://www.youtube.com/watch?v=${id}`, {
       quality: 'highestaudio'

@@ -1,4 +1,4 @@
-import {SendEventHandler, SendSelfEventHandler, DBUpdateEventHandler, DBGetEventHandler, ResizeEventHandler} from '../Types/ConsoleEventHandlers'
+import {SendEventHandler, SendSelfEventHandler, DBUpdateEventHandler, DBGetEventHandler, ResizeEventHandler, ChatCommandEventHandler} from '../Types/ConsoleEventHandlers'
 import { MusicInfo } from '../Types/MusicInfo';
 
 export interface IUserInterface{
@@ -8,6 +8,7 @@ export interface IUserInterface{
   on(event:'db-update',callback:DBUpdateEventHandler):void;
   on(event:'db-get',callback:DBGetEventHandler):void;
   on(event:'resize',callback:ResizeEventHandler):void;
+  on(event: "command", callback: ChatCommandEventHandler): void;
   sendString(str:string):void;
   sendMusic(music:MusicInfo):void;
 }

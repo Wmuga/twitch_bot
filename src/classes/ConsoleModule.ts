@@ -30,10 +30,18 @@ export class ConsoleModule extends AUserInterface{
           this.checkDBGetCommand();
           break;
         default:
-          console.log('Неизвестная команда');
+          this.checkChatCommand(input);
           return;
       }
     })
+  }
+
+  checkChatCommand(command: string) {
+    if (!command.startsWith('!')) {
+      console.log('Неверный формат команды')
+    }
+
+    this.invoke('command',command, null as never);
   }
   
   sendString(str: string): void {
@@ -52,12 +60,12 @@ export class ConsoleModule extends AUserInterface{
     let message = command.slice(2).join(' ')
     
     if (channel == this._self_channel && this._handlers['send-self']){
-      (this._handlers['send-self'] as SendSelfEventHandler)(message);
+      this.invoke('send-self',message, null as never);
       return;
     }
 
     if (this._handlers['send']){
-      (this._handlers['send'] as SendEventHandler)(channel,message);
+      this.invoke('send',channel, message);
     }
   }
   private checkResizeCommand(command:Array<string>){
@@ -77,14 +85,12 @@ export class ConsoleModule extends AUserInterface{
         return;
     }
 
-    if (this._handlers['resize']){
-      (this._handlers['resize'] as ResizeEventHandler)(small);
-    }
+    this.invoke('resize', small, null as never);
   }
 
   private checkDBUpdateCommand(command:Array<string>){
     if (command.length != 3) {
-      console.log('Неверное аргументов');
+      console.log('Неверное количество аргументов');
       return;
     }
 
@@ -96,15 +102,11 @@ export class ConsoleModule extends AUserInterface{
       return;
     }
 
-    if (this._handlers['db-update']){
-      (this._handlers['db-update'] as DBUpdateEventHandler)(username, points);
-    }
+    this.invoke('db-update',username, points);
   }
 
   private checkDBGetCommand(){
-    if (this._handlers['db-get']){
-      (this._handlers['db-get'] as DBGetEventHandler)();
-    }
+    this.invoke('db-get', null as never, null as never);
   }
 
 }

@@ -1,4 +1,3 @@
-import { IBot } from "./interfaces/IBot";
 import { Bot } from "./classes/Bot";
 import fs from 'fs'
 import path from "path";
@@ -19,11 +18,11 @@ if (botOptionsData.youtube){
   Container.addSingleton<IMusicProvider>('yt',new YoutubeMusic(botOptionsData.youtube))
 }
 Container.addSingleton<Array<IUserInterface>>('uiar', [
-  new ConsoleModule(), 
-  //new WebUIModule()
+  new ConsoleModule(),  
+  new WebUIModule(botOptionsData.uiPort),
 ]);
 Container.addSingleton<IDatabaseModule>('database', new SqliteDatabase());
 
-let bot:IBot = new Bot(botOptionsData)
+let bot:Bot = new Bot(botOptionsData)
 
 console.log("Bot started")

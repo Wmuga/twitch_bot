@@ -29,6 +29,8 @@ export class Bot implements IBot{
 
   private _sendMus: NodeJS.Timer;
 
+  private static consoleNickname = "consoleUI";
+
   constructor(options:BotOptions){
     this._client = new Client({
       options:{
@@ -81,6 +83,15 @@ export class Bot implements IBot{
       ui.on('db-update',(username, points)=>{
         this._dbModule?.setPointsViewer(username, points)
       })
+
+      ui.on('command',(command)=>{
+        let user = {
+          "display-name":Bot.consoleNickname,
+          "username":Bot.consoleNickname,
+          "mod":true,
+        } as ChatUserstate;
+        this.handleCommands(user, command.split(' '))
+      })
     }
 
     this._sendMus = setInterval(()=>{
@@ -114,7 +125,7 @@ export class Bot implements IBot{
   }
 
   private isViewerFirstChat(username: string):boolean{
-    if (username ==  this._joined_channel) return false;
+    if (`#${username}` ==  this._joined_channel) return false;
     if(!this._viewers_chatted.has(username)){
       this._viewers_chatted.add(username);
       return true;
@@ -150,7 +161,7 @@ export class Bot implements IBot{
     return false;
   }
 
-  private handleMessage(channel:string, userstate: ChatUserstate, message: string, self: boolean):void{
+  public handleMessage(channel:string, userstate: ChatUserstate, message: string, self: boolean):void{
     if (self) return;
     
     let username:string = userstate.username??"";
@@ -174,7 +185,7 @@ export class Bot implements IBot{
     return (!isOwnerOnly && userstate["mod"]) || `#${userstate['username']}` == this._joined_channel;
   }
 
-  private handleCommands(userstate: ChatUserstate, commands: string[]):void{
+  public handleCommands(userstate: ChatUserstate, commands: string[]):void{
     let username:string = userstate['display-name']??"";
     commands[0] = commands[0].substring(1);
     commands = commands.filter(e=>e.length>0);
@@ -190,7 +201,7 @@ export class Bot implements IBot{
       // Модуль музяки
       case 'sr-start':
         if (this._enabled_requests) return;
-        if(!this.havePermissions(userstate,true)){
+        if(username != Bot.consoleNickname && !this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
@@ -202,8 +213,8 @@ export class Bot implements IBot{
       case 'sr-close':
       case 'sr-end':
         if (!this._enabled_requests) return;
-        
-        if(!this.havePermissions(userstate,true)){
+
+        if(username != Bot.consoleNickname && !this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
@@ -221,7 +232,7 @@ export class Bot implements IBot{
           return;
         }
 
-        if (!(this._dbModule?.tryRemovePoints(username,5)??true)){
+        if ((username != Bot.consoleNickname && !(this._dbModule?.tryRemovePoints(username,5)??true))){
           this.reply(username, 'Недостаточно поинтов. Нужно 5');
           return;
         }
@@ -238,7 +249,7 @@ export class Bot implements IBot{
         this._ytMusic?.skip();
         return;
       case 'sr-volume':
-        if(!this.havePermissions(userstate,false)){
+        if(username != Bot.consoleNickname && !this.havePermissions(userstate,false)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
@@ -256,19 +267,19 @@ export class Bot implements IBot{
         return;
       // Остальное
       case 'roll':
-        if(commands.length==1){
-          this.reply(username,'!roll *кол-во кубов*d*макс значение куба*')
+        if (commands.length == 1) {
+          this.reply(username, '!roll *кол-во кубов*d*макс значение куба*')
           return;
         }
         let data = commands[1].split('d');
         let count = Number(data[0]) || 1;
-        let max = data.length > 1 
-          ? (Number(data[1]) || 6) 
+        let max = data.length > 1
+          ? (Number(data[1]) || 6)
           : 6;
         let cubes = new Array<Number>(count)
           .fill(0)
-          .map(_=>Math.floor(Math.random()*max)+1);
-        this.reply(username,`${cubes.join(' + ')} = ${cubes.reduce((a,b)=>a+b,0)}`)
+          .map(_ => Math.floor(Math.random() * max) + 1);
+        this.reply(username, `${cubes.join(' + ')} = ${cubes.reduce((a, b) => a + b, 0)}`)
         return;
       default:
         this.reply(username,'нет такой команды');

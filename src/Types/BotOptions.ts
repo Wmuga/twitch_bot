@@ -6,11 +6,8 @@ export type BotOptions = {
   
   channel:string;
 
-  spotify?:{
-    client_id:string;
-    client_secret:string;
-    device_id:string;
-  };
+  uiPort:number;
+
   youtube?:YoutubeOptions;
 }
 
