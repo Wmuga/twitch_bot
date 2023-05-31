@@ -39,6 +39,7 @@ export class ConsoleModule extends AUserInterface{
   checkChatCommand(command: string) {
     if (!command.startsWith('!')) {
       console.log('Неверный формат команды')
+      return;
     }
 
     this.invoke('command',command, null as never);

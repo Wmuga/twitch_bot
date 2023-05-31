@@ -29,7 +29,7 @@ export class Bot implements IBot{
 
   private _sendMus: NodeJS.Timer;
 
-  private static consoleNickname = "consoleUI";
+  private static consoleNickname = "StreamerUI";
 
   constructor(options:BotOptions){
     this._client = new Client({
@@ -61,6 +61,8 @@ export class Bot implements IBot{
     this._client.connect();
 
     for(let ui of this._uis??[]){
+      ui.setSelfChannel(options.channel.substring(1))
+
       ui.on('send',(channel, message)=>{
         this.sayToChannel(channel, message);
       });
@@ -113,6 +115,7 @@ export class Bot implements IBot{
   }
 
   reply(username: string, message: string):void{
+    if (username == Bot.consoleNickname) return;
     this.say(`@${username}, ${message}`);
   }
 
@@ -294,8 +297,6 @@ export class Bot implements IBot{
 
 
   private checkPlayingMusic(){
-    if (!this._ownMusic?.isPlaying() && !this._ytMusic?.isPlaying()) return;
-
     let curMusic = this._ytMusic?.isPlaying() ? this._ytMusic : this._ownMusic;
 
     let cur = curMusic?.current();
@@ -304,7 +305,7 @@ export class Bot implements IBot{
     this._lastMusic = cur;
     
     for(let ui of this._uis??[]){
-      ui.sendMusic(cur!);
+      ui.sendMusic(cur);
     }
   }
 }

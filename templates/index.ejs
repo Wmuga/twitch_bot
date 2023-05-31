@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>UI</title>
+</head>
+<body>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+
+  <table>
+    <tr class="headers">
+      <th colspan="2">Музыка</th>
+      <th>Информационное</th>
+      <th>Кнопки</th>
+    </tr>
+    <tr>
+      <td>Исполнитель</td>
+      <td id="artist">
+        <%= data.music?.artist %>
+      </td>
+      <td rowspan="4" id="infocol"></td>
+      <td>
+        <input type="button" id="top20" name="top20" onclick="sendTop20()" value="Получить топ по поинтам" >
+      </td>
+    </tr>
+    <tr>
+      <td>Название</td>
+      <td id="title">
+        <%= data.music?.track %>
+      </td>
+      <td>
+        <input type="button" id="sendMsg" name="sendMsg" onclick="sendMessage()" value="Отправить сообщение">
+      </td>
+    </tr>
+    <tr>
+      <td>Заказал</td>
+      <td id="requester">
+        <%= data.music?.username %>
+      </td>
+      <td>
+        <input type="button" id="setPointsUser" name="setPointsUser" onclick="setPointsUser()" value="Обновить поинты пользователя" >
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="arg0" name="arg0" type="text" placeholder="arg0">
+      </td>
+      <td>
+        <input id="arg1" name="arg1" type="text" placeholder="arg1">
+      </td>
+      <td>
+        <input type="button" id="sendCmd" name="sendCmd" onclick="sendCommand()" value="Отправить как команду">
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3"></td>
+      <td>
+        <input type="button" id="resize" name="resize" onclick="sendResize()" value="Изменить размер чата">
+      </td>
+    </tr>
+  </table>
+<script>
+  let socket
+
+  function connect(){
+    socket = io()
+    console.log('connected');
+    socket.on('music',(mi)=>{
+      setMusic(mi?.artist,mi?.track,mi?.username);
+    })
+
+    socket.on('str',(str)=>{
+      addText(str);
+    });
+  }
+
+  function setMusic(artist, title, requester){
+    document.getElementById('artist').innerText = artist??"";
+    document.getElementById('title').innerText = title??"";
+    document.getElementById('requester').innerText = requester??"";
+  }
+
+  function getArgs(){
+    let arg0 = document.getElementById("arg0").value
+    let arg1 = document.getElementById("arg1").value
+    document.getElementById("arg0").value = ""
+    document.getElementById("arg1").value = ""
+    return {
+      arg0,
+      arg1,
+    }
+  }
+
+  function addText(text){
+    document.getElementById('infocol').innerText += `${text}\n`
+  }
+
+  function sendTop20(){
+    socket.emit('db-get');
+  }
+
+  function sendMessage(){
+    let {arg0, arg1} = getArgs();
+    if (arg0?.length == 0 || arg1?.length == 0) {
+      addText('Неверные переменные');
+      return;
+    }
+    socket.emit('send',arg0,arg1);
+  }
+
+  function updatePoints(){
+    let {arg0, arg1} = getArgs();
+    arg1 = parseInt(arg1)
+    if (arg0?.length == 0 || isNaN(arg1)) {
+      addText('Неверные переменные');
+      return;
+    }
+    socket.emit('db-update',arg0,arg1);
+  }
+
+  function sendCommand(){
+    let {arg0, arg1} = getArgs();
+    if (arg0?.length == 0) {
+      addText('Неверные переменные');
+      return;
+    }
+    socket.emit('command',arg0);
+  }
+
+  function sendResize(){
+    let {arg0, arg1} = getArgs();
+    arg0 = arg0 == "true"
+    socket.emit('resize',arg0);
+  }
+
+  connect()
+</script>
+<style>
+  body{
+    position: absolute;
+    width: 100svw;
+    height: 100svh;
+  }
+  .headers > *{
+    text-align: center;
+  }
+  table{
+    position: relative;
+    left: 50%;
+    transform: translate(-50%,0);
+  }
+  td, th{
+    width: 10em;
+    height: 4em;
+    padding: 1em;
+  }
+  td#infocol{
+    border: 1px solid black;
+  }
+  #infocol{
+    width: 18em;
+  }
+</style>
+</body>
+</html>

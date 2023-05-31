@@ -10,5 +10,5 @@ export interface IUserInterface{
   on(event:'resize',callback:ResizeEventHandler):void;
   on(event: "command", callback: ChatCommandEventHandler): void;
   sendString(str:string):void;
-  sendMusic(music:MusicInfo):void;
+  sendMusic(music:MusicInfo | undefined):void;
 }
