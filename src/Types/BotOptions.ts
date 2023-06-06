@@ -9,6 +9,8 @@ export type BotOptions = {
   uiPort:number;
 
   youtube?:YoutubeOptions;
+
+  ipc_pipe_name?:string;
 }
 
 export type YoutubeOptions = {

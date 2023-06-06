@@ -20,7 +20,7 @@ export class Bot implements IBot{
 
   private _botRegex:RegExp | undefined;
 
-  private _ownMusic?: IMusicProvider;
+  private _ownMusic?: IMusicProvider = Container.get('ipc');
   private _ytMusic?: IMusicProvider = Container.get('yt');
   private _lastMusic?: MusicInfo;
   
