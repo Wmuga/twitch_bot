@@ -299,10 +299,15 @@ export class Bot implements IBot{
   private checkPlayingMusic(){
     let curMusic = this._ytMusic?.isPlaying() ? this._ytMusic : this._ownMusic;
 
+    if (this._ytMusic?.isPlaying() && this._ownMusic?.isPlaying()) 
+      this._ownMusic?.stop();
+    
     let cur = curMusic?.current();
     if (cur == this._lastMusic) return;
 
     this._lastMusic = cur;
+
+    if (cur == undefined) this._ownMusic?.play();
     
     for(let ui of this._uis??[]){
       ui.sendMusic(cur);

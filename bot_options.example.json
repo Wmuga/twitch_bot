@@ -1,12 +1,13 @@
 {
   "identity":{
     "name":"TWITCH_NAME",
-    "oauth":"OAUTH_(U CAN GET AT TMI TOOLS OR SMTH)"
+    "oauth":"OAUTH:STRING"
   },
   "channel":"#MODERATED_CHANNEL",
   "youtube":{
     "api_key":"GOOGLE_API_KEY_FOR_YT"
   },
   "uiPort":4444,
-  "ipc_pipe_name":"IPC_PIPE"
+  "ipc_pipe_name":"IPC_PIPE",
+  "announces":["Nice weather", "Innit"]
 }

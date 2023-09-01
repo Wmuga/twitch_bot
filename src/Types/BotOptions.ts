@@ -11,6 +11,8 @@ export type BotOptions = {
   youtube?:YoutubeOptions;
 
   ipc_pipe_name?:string;
+
+  announces?:Array<string>;
 }
 
 export type YoutubeOptions = {

@@ -6,3 +6,4 @@ soundboard/*
 build/*
 test.js
 backups/**
+**/.VSCodeCounter/**
