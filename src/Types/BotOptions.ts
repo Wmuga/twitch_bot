@@ -7,6 +7,7 @@ export type BotOptions = {
   channel:string;
 
   uiPort:number;
+  overlayPort:number;
 
   youtube?:YoutubeOptions;
 

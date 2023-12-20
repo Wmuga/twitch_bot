@@ -9,7 +9,7 @@ class DIContainer implements IDIContainer{
   private _sContainer:Record<string, object> = {};
   private _depTypeContainer:Record<string, DependencyType> = {};
 
-  addTransient<I>(key:string): boolean {
+  addTransient<I>(key:string, obj:I): boolean {
     throw Error('Not implemented');
     if (key in this._depTypeContainer) return false;
 

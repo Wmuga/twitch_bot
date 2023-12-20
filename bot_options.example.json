@@ -8,6 +8,7 @@
     "api_key":"GOOGLE_API_KEY_FOR_YT"
   },
   "uiPort":4444,
+  "overlayPort":3333,
   "ipc_pipe_name":"IPC_PIPE",
   "announces":["Nice weather", "Innit"]
 }

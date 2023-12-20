@@ -11,6 +11,8 @@ import { IDatabaseModule } from "./interfaces/IDatabaseModule";
 import { SqliteDatabase } from "./classes/SqliteDatabase";
 import { WebUIModule } from "./classes/WebUIModule";
 import { IPCMusic } from "./classes/IPCMusic";
+import { IOverlayServer } from "./interfaces/IOverlayServer";
+import { OverlayServer } from "./classes/OverlaySever";
 
 const botOptionsFile = fs.readFileSync(path.join(process.cwd(),'bot_options.json'))
 const botOptionsData = JSON.parse(botOptionsFile.toString()) as BotOptions
@@ -27,6 +29,8 @@ Container.addSingleton<Array<IUserInterface>>('uiar', [
   new ConsoleModule(),  
   new WebUIModule(botOptionsData.uiPort),
 ]);
+
+Container.addSingleton<IOverlayServer>('ov', new OverlayServer(botOptionsData.overlayPort))
 
 Container.addSingleton<IDatabaseModule>('database', new SqliteDatabase());
 

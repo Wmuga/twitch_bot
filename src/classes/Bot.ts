@@ -6,6 +6,7 @@ import { IUserInterface } from "../interfaces/IUserInterface";
 import { Container } from "./DIContainer";
 import { IDatabaseModule } from "../interfaces/IDatabaseModule";
 import { MusicInfo } from "../Types/MusicInfo";
+import { IOverlayServer } from "../interfaces/IOverlayServer";
 
 export class Bot implements IBot{
   private _client:Client;
@@ -26,6 +27,7 @@ export class Bot implements IBot{
   
   private _dbModule?: IDatabaseModule = Container.get('database');
   private _uis?: Array<IUserInterface> = Container.get('uiar');
+  private _overlay?: IOverlayServer = Container.get('ov')
 
   private _sendMus: NodeJS.Timer;
 
@@ -170,8 +172,10 @@ export class Bot implements IBot{
     let username:string = userstate.username??"";
     
     if (this.isBotMessage(username,message)) return;
+    
     if (this.isViewerFirstChat(username)){
       this.say(`Приветствую, @${username}`);
+      this._overlay?.sendViewer(`Приветствую, @${username}`);
     }
 
     this._messages_count++;
@@ -312,5 +316,7 @@ export class Bot implements IBot{
     for(let ui of this._uis??[]){
       ui.sendMusic(cur);
     }
+
+    this._overlay?.sendSong(cur)
   }
 }
