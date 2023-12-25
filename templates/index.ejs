@@ -12,13 +12,14 @@
       <th colspan="2">Музыка</th>
       <th>Информационное</th>
       <th>Кнопки</th>
+      <th colspan="2">Поля</th>
     </tr>
     <tr>
       <td>Исполнитель</td>
       <td id="artist">
         <%= data.music?.artist %>
       </td>
-      <td rowspan="4" id="infocol"></td>
+      <td rowspan="6" id="infocol"></td>
       <td>
         <input type="button" id="top20" name="top20" onclick="sendTop20()" value="Получить топ по поинтам" >
       </td>
@@ -31,6 +32,12 @@
       <td>
         <input type="button" id="sendMsg" name="sendMsg" onclick="sendMessage()" value="Отправить сообщение">
       </td>
+      <td>
+        <input type="text" id="channelName" name="channelName" value="#wmuga" placeholder="Канал">
+      </td>
+      <td>
+        <input type="text" id="msgText" name="msgText" placeholder="Сообщение">
+      </td>
     </tr>
     <tr>
       <td>Заказал</td>
@@ -40,27 +47,53 @@
       <td>
         <input type="button" id="setPointsUser" name="setPointsUser" onclick="setPointsUser()" value="Обновить поинты пользователя" >
       </td>
+      <td>
+        <input type="text" id="userName" name="userName" placeholder="Пользователь" >
+      </td>
+      <td>
+        <input type="text" id="pointsCount" name="pointsCount" placeholder="Поинты" >
+      </td>
     </tr>
     <tr>
       <td>
-        <input id="arg0" name="arg0" type="text" placeholder="arg0">
+        <input type="button" id="srStart" name="srStart" onclick="startMusic()" value="Включить музыку всем">
       </td>
       <td>
-        <input id="arg1" name="arg1" type="text" placeholder="arg1">
+        <input type="button" id="srStop" name="srStop" onclick="stopMusic()" value="Выключить музыку">
       </td>
       <td>
         <input type="button" id="sendCmd" name="sendCmd" onclick="sendCommand()" value="Отправить как команду">
       </td>
+      <td colspan="2">
+        <input type="text" id="cmd" name="cmd" placeholder="!команда">
+      </td>
     </tr>
     <tr>
-      <td colspan="3"></td>
+      <td>
+        <input type="button" id="sr" name="sr" onclick="sendMusic()" value="Заказать музыку">
+      </td>
+      <td>
+        <input type="text" id="musicTitle" name="musicTitle" placeholder="Название">
+      </td>
       <td>
         <input type="button" id="resize" name="resize" onclick="sendResize()" value="Изменить размер чата">
+      </td>
+      <td>
+        <input type="text" id="size" name="size" placeholder="Узкий?">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input type="button" id="srStartMe" name="srStartMe" onclick="startMusicMe()" value="Включить музыку мне">
+      </td>
+      <td>
+        <input type="button" id="srSkip" name="srSkip" onclick="skipMusic()" value="Скипнуть музыку">
       </td>
     </tr>
   </table>
 <script>
   let socket
+  let musicOn = false
 
   function connect(){
     socket = io()
@@ -80,11 +113,11 @@
     document.getElementById('requester').innerText = requester??"";
   }
 
-  function getArgs(){
-    let arg0 = document.getElementById("arg0").value
-    let arg1 = document.getElementById("arg1").value
-    document.getElementById("arg0").value = ""
-    document.getElementById("arg1").value = ""
+  function getArgs(field1, field2, reset1, reset2){
+    let arg0 = document.getElementById(field1)?.value??""
+    let arg1 = document.getElementById(field2)?.value??""
+    if (reset1) document.getElementById(field1).value = ""
+    if (reset2) document.getElementById(field2).value = ""
     return {
       arg0,
       arg1,
@@ -100,7 +133,7 @@
   }
 
   function sendMessage(){
-    let {arg0, arg1} = getArgs();
+    let {arg0, arg1} = getArgs('channelName','msgText',false,true);
     if (arg0?.length == 0 || arg1?.length == 0) {
       addText('Неверные переменные');
       return;
@@ -109,7 +142,7 @@
   }
 
   function updatePoints(){
-    let {arg0, arg1} = getArgs();
+    let {arg0, arg1} = getArgs('userName','pointsCount',true,true);
     arg1 = parseInt(arg1)
     if (arg0?.length == 0 || isNaN(arg1)) {
       addText('Неверные переменные');
@@ -119,18 +152,54 @@
   }
 
   function sendCommand(){
-    let {arg0, arg1} = getArgs();
+    let {arg0, arg1} = getArgs('cmd','cmd',true,true);
     if (arg0?.length == 0) {
       addText('Неверные переменные');
       return;
+    }
+    if (arg0[0]!='!'){
+      arg0 = '!'+arg0
     }
     socket.emit('command',arg0);
   }
 
   function sendResize(){
-    let {arg0, arg1} = getArgs();
-    arg0 = arg0 == "true"
+    let {arg0, arg1} = getArgs('size','size',true,true);
+    arg0 = arg0 == "true";
     socket.emit('resize',arg0);
+  }
+
+  function startMusic(){
+    musicOn = true
+    socket.emit('command','!sr-start');
+  }
+
+  function startMusicMe(){
+    musicOn = true
+    socket.emit('command','!sr-start me');
+  }
+
+  function stopMusic(){
+    musicOn = false
+    socket.emit('command','!sr-stop');
+  }
+
+  function skipMusic(){
+    socket.emit('command','!sr-skip');
+  }
+
+  function sendMusic(){
+    if (!musicOn){
+      addText('Сначала включи заказы')
+      return
+    }
+    let {arg0, arg1} = getArgs('musicTitle','musicTitle',true,true);
+    if (arg0?.length == 0) {
+      addText('Вставь название');
+      return;
+    }
+    addText('Заказано: ' +arg0);
+    socket.emit('command','!sr ' + arg0);
   }
 
   connect()

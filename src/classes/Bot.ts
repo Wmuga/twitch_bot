@@ -24,6 +24,7 @@ export class Bot implements IBot{
   private _ownMusic?: IMusicProvider = Container.get('ipc');
   private _ytMusic?: IMusicProvider = Container.get('yt');
   private _lastMusic?: MusicInfo;
+  private _onlyMeMusic: boolean = false;
   
   private _dbModule?: IDatabaseModule = Container.get('database');
   private _uis?: Array<IUserInterface> = Container.get('uiar');
@@ -207,14 +208,20 @@ export class Bot implements IBot{
         return;
       // Модуль музяки
       case 'sr-start':
-        if (this._enabled_requests) return;
         if(username != Bot.consoleNickname && !this.havePermissions(userstate,true)){
           this.reply(username, 'не трожь кнопку');
           return;
         }
+        this._onlyMeMusic = false
+
+        if (commands.length>1 && commands[1] == 'me'){
+          this._onlyMeMusic = true
+        }
+
+        if (this._enabled_requests) return;
         this._enabled_requests = true;
         this._ytMusic?.play();
-        this.say('Включены запросы');
+        this.say('Включены запросы ' + (this._onlyMeMusic? 'в режиме только стример':''));
         return;
       case 'sr-stop':
       case 'sr-close':
@@ -234,6 +241,13 @@ export class Bot implements IBot{
           this.reply(username, 'заказы не включены');
           return;
         }
+
+        if(username != Bot.consoleNickname && this._onlyMeMusic && !this.havePermissions(userstate,true)){
+          this.reply(username, 'заказы от публики не включены');
+          return;
+        }
+
+        
         if (commands.length == 1){
           this.reply(username, 'Можно заказать музыку !sr *трек*');
           return;
